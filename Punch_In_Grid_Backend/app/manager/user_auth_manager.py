@@ -1,0 +1,69 @@
+from pydantic import BaseModel, EmailStr, Field
+import pandas as pd
+from app.services.user_auth_services import AuthUserService
+
+class RegisterRequest(BaseModel):
+    emp_id: str
+    name: str
+    role: str = Field(..., pattern="^(admin)$")
+    email: EmailStr
+    password: str
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class SetPasswordRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserResponse(BaseModel):
+    emp_id: str
+    name: str
+    role: str
+    email: EmailStr
+    is_active: str
+
+class LoginSuccessResponse(BaseModel):
+    message: str
+    emp_id: str
+    email: str
+    role: str
+    is_active: bool
+    access_token: str
+    token_type: str
+
+class AuthUserManager:
+    def __init__(self):
+        self.service = AuthUserService()
+
+    def register(self, user_req: RegisterRequest):
+        user_data = user_req.dict()
+        registered_user, error = self.service.register_user(user_data)
+        if error:
+            return None, error
+        return registered_user, None
+
+    def login(self, login_req: LoginRequest):
+        user = self.service.get_user_by_email(login_req.email)
+        if not user:
+            return None, "Invalid email or password"
+
+        # First time login check
+        if user.get("is_active") == "false":
+            return None, "First you need to set your password"
+
+        if not self.service.verify_password(login_req.password, user["password"]):
+            return None, "Invalid email or password"
+
+        return user, None
+
+    def bulk_register_from_excel(self, file):
+        df = pd.read_excel(file)
+        users = df.to_dict(orient="records")
+        return self.service.bulk_register_users(users)
+
+    def set_password(self, set_pass_req: SetPasswordRequest):
+        return self.service.set_user_password(set_pass_req.email, set_pass_req.password)
+
+auth_user_manager = AuthUserManager()
