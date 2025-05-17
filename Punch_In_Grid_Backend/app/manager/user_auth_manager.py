@@ -1,3 +1,4 @@
+
 from pydantic import BaseModel, EmailStr, Field
 import pandas as pd
 from app.services.user_auth_services import AuthUserService
@@ -22,7 +23,7 @@ class UserResponse(BaseModel):
     name: str
     role: str
     email: EmailStr
-    is_active: str
+    is_active: bool
 
 class LoginSuccessResponse(BaseModel):
     message: str
@@ -32,6 +33,11 @@ class LoginSuccessResponse(BaseModel):
     is_active: bool
     access_token: str
     token_type: str
+
+class TokenData(BaseModel):
+    email: str
+    role: str
+    emp_id: str
 
 class AuthUserManager:
     def __init__(self):
@@ -49,7 +55,6 @@ class AuthUserManager:
         if not user:
             return None, "Invalid email or password"
 
-        # First time login check
         if user.get("is_active") == "false":
             return None, "First you need to set your password"
 
@@ -65,5 +70,11 @@ class AuthUserManager:
 
     def set_password(self, set_pass_req: SetPasswordRequest):
         return self.service.set_user_password(set_pass_req.email, set_pass_req.password)
+
+    def get_logged_in_users(self):
+        return self.service.get_logged_in_users()
+
+    def update_user_email_by_admin(self, emp_id: str, new_email: str):
+        return self.service.update_user_email_by_admin(emp_id, new_email)
 
 auth_user_manager = AuthUserManager()

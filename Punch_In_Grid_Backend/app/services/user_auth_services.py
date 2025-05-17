@@ -33,7 +33,7 @@ class AuthUserService:
             return None, "User already exists"
 
         user_data["password"] = self.hash_password(user_data["password"])
-        user_data["is_active"] = "true"
+        user_data["is_active"] = False
 
         self.es.index(index=self.index, id=user_data["emp_id"], document=user_data)
         return user_data, None
@@ -56,7 +56,7 @@ class AuthUserService:
             return None, "Password already set"
 
         user["password"] = self.hash_password(password)
-        user["is_active"] = "true"
+        user["is_active"] = True
 
         self.es.index(index=self.index, id=user["emp_id"], document=user)
         return user, None
@@ -72,3 +72,52 @@ class AuthUserService:
                 self.es.index(index=self.index, id=user["emp_id"], document=user)
                 inserted += 1
         return inserted
+    
+
+    def get_logged_in_users(self):
+        query = {
+            "query": {
+                "term": {
+                    "is_active": "true"
+                }
+            }
+        }
+        resp = self.es.search(index=self.index, body=query, size=10000)
+        hits = resp['hits']['hits']
+        
+        return [
+            {
+                "emp_id": hit["_source"]["emp_id"],
+                "name": hit["_source"]["name"],
+                "email": hit["_source"]["email"],
+                "role": hit["_source"]["role"],
+                "is_active": hit["_source"]["is_active"]
+            }
+            for hit in hits
+        ]
+
+
+
+    def update_user_email_by_admin(self, emp_id: str, new_email: str):
+        # Search user by emp_id
+        try:
+            user = self.es.get(index=self.index, id=emp_id)["_source"]
+        except:
+            return None, "User not found"
+
+        # Check if new email already exists
+        if self.get_user_by_email(new_email):
+            return None, "Email already exists"
+
+        # Update email
+        user["email"] = new_email
+        self.es.index(index=self.index, id=emp_id, document=user)
+        return user, None
+
+
+
+    
+
+
+
+
