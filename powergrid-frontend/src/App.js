@@ -7,12 +7,10 @@ import UserDashboard from './pages/UserDashboard';
 import SetPassword from './pages/SetPassword';
 import UploadExcel from './pages/UploadExcel';
 import LoggedInUsers from './pages/LoggedInUsers';
-// Make sure this path is correct - adjust if your Layout component is in a different location
-import Layout from './components/Layout'; 
+import Layout from './components/Layout';
 import './App.css';
-
-// Add this import
 import UploadUsers from './pages/UploadUsers';
+import UpdateUserEmail from './pages/UpdateUserEmail';
 
 function App() {
   return (
@@ -29,6 +27,8 @@ function App() {
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/upload-excel" element={<UploadExcel />} />
           <Route path="/logged-in-users" element={<LoggedInUsers />} />
+          <Route path="/admin/update-email" element={<UpdateUserEmail />} />
+          <Route path="/upload-users" element={<UploadUsers />} />
           
           {/* User routes */}
           <Route path="/user-dashboard" element={<UserDashboard />} />
@@ -36,9 +36,6 @@ function App() {
         
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/" replace />} />
-        
-        // Then in your Routes section, add:
-        <Route path="/upload-users" element={<UploadUsers />} />
       </Routes>
     </BrowserRouter>
   );

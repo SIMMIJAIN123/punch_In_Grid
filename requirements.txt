@@ -19,18 +19,3 @@ typing-inspection==0.4.0
 typing_extensions==4.13.2
 uvicorn==0.34.2
 
-
-
-
-
-
-
-/app/api/user_auth.py
-- app/config/setting.py
-app/manager/user_auth_manager.py
-app/services/user_auth_services.py
-app/main.py
-
-  ├── user_auth.py          # FastAPI route file
-  ├── user_auth_manager.py  # Business logic
-  ├── user_auth_service.py  # Elasticsearch operations

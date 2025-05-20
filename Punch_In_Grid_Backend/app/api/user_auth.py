@@ -10,6 +10,8 @@ from app.utils.jwt_helper import create_access_token, decode_access_token
 from datetime import timedelta
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+# router = APIRouter(prefix="/service-auth-powerGrid/v1/endpoint", tags=["auth"])
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 

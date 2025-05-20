@@ -141,3 +141,27 @@ button:hover {
   text-align: center;
   border-radius: 0 0 12px 12px;
 }
+
+
+.profile-section {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 20px 0;
+}
+
+.profile-details {
+  margin-top: 15px;
+}
+
+.profile-details p {
+  margin: 10px 0;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.profile-details strong {
+  color: #333;
+  margin-right: 10px;
+}

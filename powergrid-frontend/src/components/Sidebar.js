@@ -25,7 +25,6 @@ const Sidebar = ({ userRole }) => {
         {userRole === 'admin' && (
           <>
             <Link to="/logged-in-users">Logged In Users</Link>
-            <Link to="/register">Register User</Link>
             <Link to="/upload-users">Upload Users Data</Link>
           </>
         )}
@@ -37,7 +36,19 @@ const Sidebar = ({ userRole }) => {
             {/* Add more user-specific links as needed */}
           </>
         )}
+
+{userRole === 'admin' && (
+
+<Link to="/admin/update-email" className="admin-link">
+
+Update User Email
+
+</Link>
+
+)}
       </div>
+
+      
       
       {/* Improved logout button placement and styling */}
       <div className="sidebar-footer">

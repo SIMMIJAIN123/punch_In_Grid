@@ -26,47 +26,20 @@ const Layout = () => {
     setSelectedMonth(parseInt(e.target.value));
     // Here you would fetch data for the selected month
   };
-  
-  // Commented out the fetch for now since the endpoint doesn't exist
-  // useEffect(() => {
-  //   // Only fetch punch data if on a dashboard page
-  //   if (isDashboardPage) {
-  //     const fetchPunchData = async () => {
-  //       try {
-  //         const token = localStorage.getItem('token');
-  //         const response = await fetch('http://localhost:8000/auth/punch-status', {
-  //           headers: {
-  //             'Authorization': `Bearer ${token}`
-  //           }
-  //         });
-  //         
-  //         if (response.ok) {
-  //           const data = await response.json();
-  //           setPunchData(data);
-  //         } else {
-  //           console.error('Failed to fetch punch data');
-  //         }
-  //       } catch (error) {
-  //         console.error('Error fetching punch data:', error);
-  //       } finally {
-  //         setLoading(false);
-  //       }
-  //     };
-  //     
-  //     fetchPunchData();
-  //   } else {
-  //     // Reset loading state if not on dashboard
-  //     setLoading(false);
-  //   }
-  // }, [currentPath, isDashboardPage]);
-  
+
   // If no token exists, redirect to login
   if (!localStorage.getItem('token')) {
     return <Navigate to="/" replace />;
   }
   
   // Define admin-only and user-only paths
-  const adminOnlyPaths = ['/admin-dashboard', '/logged-in-users', '/register'];
+  const adminOnlyPaths = [
+    '/admin-dashboard', 
+    '/logged-in-users', 
+    '/register',
+    '/admin/update-email',  // Add this path
+    '/upload-users'
+  ];
   const userOnlyPaths = ['/user-dashboard'];
   
   // Check if user has access to current path

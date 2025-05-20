@@ -12,27 +12,32 @@ const UploadUsers = () => {
   
   const handleFileUpload = async (e) => {
     e.preventDefault();
-    if (!excelFile) {
-      setUploadStatus('Please select a file first');
-      return;
-    }
-    
-    const formData = new FormData();
-    formData.append('file', excelFile);
-    
     try {
+      if (!excelFile) {
+        throw new Error('Please select a file first');
+      }
+  
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No auth token found. Please login again.');
+      }
+  
+      // Validate file type
+      if (!excelFile.name.match(/\.(xlsx|xls)$/)) {
+        throw new Error('Please upload a valid Excel file (.xlsx or .xls)');
+      }
+  
       setUploadStatus('Uploading...');
-      const response = await axios.post('/auth/upload-excel', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      setUploadStatus('File uploaded successfully!');
+      const formData = new FormData();
+      formData.append('file', excelFile);
+  
+      const response = await axios.post('/auth/upload_excel', formData);
+      setUploadStatus(`Upload successful! Inserted count: ${response.data.inserted_count}`);
       setExcelFile(null);
-      // Reset file input
       document.getElementById('excel-file').value = '';
     } catch (err) {
-      setUploadStatus(err.response?.data?.detail || 'Upload failed. Please try again.');
+      console.error('Upload error:', err);
+      setUploadStatus(err.message || 'Upload failed. Please try again.');
     }
   };
 
@@ -45,7 +50,7 @@ const UploadUsers = () => {
         <p>Upload an Excel file with user details for bulk registration.</p>
         
         {uploadStatus && (
-          <div className={uploadStatus.includes('success') ? 'success-message' : 'error-message'}>
+          <div className={uploadStatus.includes('successful') ? 'success-message' : 'error-message'}>
             {uploadStatus}
           </div>
         )}
@@ -72,8 +77,7 @@ const UploadUsers = () => {
             <li>Name (required)</li>
             <li>Email (required)</li>
             <li>Employee ID (required)</li>
-            <li>Password (required)</li>
-            <li>Role (optional, defaults to "user")</li>
+            <li>Role ("user")</li>
           </ul>
           <a href="/template.xlsx" download className="download-link">Download Template</a>
         </div>

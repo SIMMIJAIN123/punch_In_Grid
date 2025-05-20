@@ -54,3 +54,15 @@
 .logout-btn:hover {
   background-color: #c0392b;
 }
+
+.admin-link {
+  color: white;
+  text-decoration: none;
+  padding: 10px 20px;
+  display: block;
+  transition: background-color 0.3s;
+}
+
+.admin-link:hover {
+  background-color: #34495e;
+}

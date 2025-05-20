@@ -2,42 +2,10 @@
 from pydantic import BaseModel, EmailStr, Field
 import pandas as pd
 from app.services.user_auth_services import AuthUserService
-
-class RegisterRequest(BaseModel):
-    emp_id: str
-    name: str
-    role: str = Field(..., pattern="^(admin)$")
-    email: EmailStr
-    password: str
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-class SetPasswordRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-class UserResponse(BaseModel):
-    emp_id: str
-    name: str
-    role: str
-    email: EmailStr
-    is_active: bool
-
-class LoginSuccessResponse(BaseModel):
-    message: str
-    emp_id: str
-    email: str
-    role: str
-    is_active: bool
-    access_token: str
-    token_type: str
-
-class TokenData(BaseModel):
-    email: str
-    role: str
-    emp_id: str
+from app.models.user_auth_models import (
+    RegisterRequest, LoginRequest, SetPasswordRequest,
+    UserResponse, LoginSuccessResponse, TokenData
+)
 
 class AuthUserManager:
     def __init__(self):

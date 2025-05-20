@@ -6,44 +6,6 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-
-  //   try {
-  //     const response = await fetch('http://localhost:8000/auth/login', {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify({ email, password }),
-  //     });
-
-  //     const data = await response.json();
-
-  //     if (response.ok) {
-  //       // Save token and role
-  //       localStorage.setItem('token', data.access_token);
-  //       localStorage.setItem('role', data.role);
-
-  //       // Redirect based on role and password status
-  //       if (data.role === 'admin') {
-  //         navigate('/admin-dashboard');
-  //       } else if (data.role === 'user') {
-  //         if (data.password_set === false) {
-  //           navigate('/set-password');
-  //           window.location.href = "/set-password/";
-  //         } else {
-  //           navigate('/user-dashboard');
-  //         }
-  //       } else {
-  //         alert('Unknown role, cannot redirect');
-  //       }
-  //     } else {
-  //       alert(data.detail || 'Login failed');
-  //     }
-  //   } catch (error) {
-  //     console.error('Login error:', error);
-  //     alert('Something went wrong. Please try again.');
-  //   }
-  // };
   const handleSubmit = async (e) => {
     e.preventDefault();
   
@@ -108,12 +70,6 @@ export default function Login() {
         <button type="submit">Login</button>
       </form>
 
-      <p>
-        Don't have an account?{' '}
-        <button type="button" onClick={() => navigate('/register')}>
-          Register here
-        </button>
-      </p>
     </div>
   );
 }

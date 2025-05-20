@@ -9,8 +9,8 @@ app = FastAPI()
 
 # ✅ Allow React frontend (running on port 3001)
 origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000"
+    "http://localhost:3002",
+    "http://127.0.0.1:3002"
 ]
 
 app.add_middleware(
@@ -31,7 +31,7 @@ def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
     openapi_schema = get_openapi(
-        title="Your API",
+        title="PowerGrid API",
         version="1.0.0",
         description="API for user management",
         routes=app.routes,
