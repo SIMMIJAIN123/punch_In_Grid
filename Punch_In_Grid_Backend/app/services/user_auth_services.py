@@ -45,19 +45,6 @@ class AuthUserService:
         self.es.index(index=self.index, id=user_data["emp_id"], document=user_data)
         return user_data, None
 
-    # def authenticate_user(self, email: str, password: str):
-    #     user = self.get_user_by_email(email)
-    #     if not user:
-    #         return None
-    #     if user["is_active"] != "true":
-    #         return None
-    #     if not self.verify_password(password, user["password"]):
-    #         return None
-        
-    #     if str(user.get("is_active", "")).lower() != "true":
-    #         return None
-        
-    #     return user
     def authenticate_user(self, email: str, password: str):
         user = self.get_user_by_email(email)
         print("Fetched user:", user)
@@ -153,45 +140,6 @@ class AuthUserService:
         }
         resp = self.es.search(index=self.attendance_index, body=query, size=10000)
         return [hit["_source"] for hit in resp['hits']['hits']]
-
-    def fetch_attendance_by_date_range(self, start_date: str, end_date: str, emp_id: str = None, name: str = None):
-        query = {
-            "query": {
-                "bool": {
-                    "must": [
-                        {
-                            "range": {
-                                "date": {
-                                    "gte": start_date,
-                                    "lte": end_date,
-                                    "format": "yyyy-MM-dd"
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        }
-        
-        if emp_id:
-            query["query"]["bool"]["must"].append({
-                "term": {
-                    "empcode": emp_id
-                }
-            })
-        
-        if name:
-            query["query"]["bool"]["must"].append({
-                "match": {
-                    "name": {
-                        "query": name,
-                        "operator": "and"
-                    }
-                }
-            })
-        
-        resp = self.es.search(index=self.attendance_index, body=query, size=10000)
-        return [hit["_source"] for hit in resp['hits']['hits']]
     
     def parse_and_store_attendance(self, text: str):
         records = []
@@ -267,3 +215,42 @@ class AuthUserService:
 
 
     
+    def fetch_attendance_by_date_range(self, start_date: str, end_date: str, emp_id: str = None, name: str = None):
+        query = {
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "range": {
+                                "date": {
+                                    "gte": start_date,
+                                    "lte": end_date,
+                                    "format": "yyyy-MM-dd"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+
+        if emp_id:
+            query["query"]["bool"]["must"].append({
+                "term": {
+                    "empcode": emp_id
+                }
+            })
+
+        if name:
+            query["query"]["bool"]["must"].append({
+                "match": {
+                    "name": {
+                        "query": name,
+                        "operator": "and"
+                    }
+                }
+            })
+
+        print("DEBUG: Attendance Query", query)
+        resp = self.es.search(index=self.attendance_index, body=query, size=10000)
+        return [hit["_source"] for hit in resp['hits']['hits']]
