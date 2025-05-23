@@ -23,15 +23,10 @@ function AppRouter() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/admin/update-email" element={<UpdateUserEmail />} />
-        // Inside your router configuration, add these routes:
-        {
-          path: '/admin/pdf-upload',
-          element: <ProtectedRoute><PdfUpload /></ProtectedRoute>
-        },
-        {
+        {/* {
           path: '/admin/attendance-filter',
           element: <ProtectedRoute><AttendanceFilter /></ProtectedRoute>
-        }
+        } */}
       </Routes>
     </Router>
   );

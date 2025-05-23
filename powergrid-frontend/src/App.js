@@ -12,6 +12,7 @@ import Layout from './components/Layout';
 import './App.css';
 import UploadUsers from './pages/UploadUsers';
 import UpdateUserEmail from './pages/UpdateUserEmail';
+import AttendanceFilter from './pages/AttendanceFilter';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           <Route path="/logged-in-users" element={<LoggedInUsers />} />
           <Route path="/admin/update-email" element={<UpdateUserEmail />} />
           <Route path="/upload-users" element={<UploadUsers />} />
+          <Route path="/admin/attendance-filter" element={<AttendanceFilter />} />
           
           {/* User routes */}
           <Route path="/user-dashboard" element={<UserDashboard />} />
