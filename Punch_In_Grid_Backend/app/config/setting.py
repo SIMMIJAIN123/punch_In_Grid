@@ -4,5 +4,8 @@ from pydantic_settings import BaseSettings  # <-- updated import
 class Settings(BaseSettings):
     elasticsearch_url: str = "http://localhost:9200"
     index_name: str = "users"
+    attendance_index: str = "attendance_records"  # Changed from "attendance" to match your ES mapping
+
 
 settings = Settings()
+

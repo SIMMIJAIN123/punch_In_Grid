@@ -24,8 +24,11 @@ const Sidebar = ({ userRole }) => {
         {/* Admin-only links */}
         {userRole === 'admin' && (
           <>
+            <Link to="/admin/attendance-filter">Attendance Filter</Link>
+            <Link to="/upload-excel">Upload Daily Attendance Excel</Link>
             <Link to="/logged-in-users">Logged In Users</Link>
             <Link to="/upload-users">Upload Users Data</Link>
+            <Link to="/admin/update-email" className="admin-link">Update User Email</Link>
           </>
         )}
         
@@ -33,26 +36,12 @@ const Sidebar = ({ userRole }) => {
         {userRole === 'user' && (
           <>
             <Link to="/user-profile">My Profile</Link>
-            {/* Add more user-specific links as needed */}
           </>
         )}
-
-{userRole === 'admin' && (
-
-<Link to="/admin/update-email" className="admin-link">
-
-Update User Email
-
-</Link>
-
-)}
       </div>
-
       
-      
-      {/* Improved logout button placement and styling */}
       <div className="sidebar-footer">
-        <button onClick={handleLogout} className="logout-btn">Logout</button>
+        <button onClick={handleLogout}>Logout</button>
       </div>
     </div>
   );

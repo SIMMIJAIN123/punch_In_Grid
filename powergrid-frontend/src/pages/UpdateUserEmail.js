@@ -28,7 +28,7 @@ export default function UpdateUserEmail() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.put(`/auth/admin/users/${empId}/email?new_email=${encodeURIComponent(newEmail)}`, {}, {
+      const response = await axios.put(`/service-auth-powerGrid/v1/endpoint/admin/users/${empId}/email?new_email=${encodeURIComponent(newEmail)}`, {}, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

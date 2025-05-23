@@ -31,13 +31,13 @@ const UploadUsers = () => {
       const formData = new FormData();
       formData.append('file', excelFile);
   
-      const response = await axios.post('/auth/upload_excel', formData);
+      const response = await axios.post('/service-auth-powerGrid/v1/endpoint/upload_excel', formData);
       setUploadStatus(`Upload successful! Inserted count: ${response.data.inserted_count}`);
       setExcelFile(null);
       document.getElementById('excel-file').value = '';
     } catch (err) {
       console.error('Upload error:', err);
-      setUploadStatus(err.message || 'Upload failed. Please try again.');
+      setUploadStatus(err.response?.data?.detail || err.message || 'Upload failed. Please try again.');
     }
   };
 

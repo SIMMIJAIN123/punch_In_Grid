@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
 import UserDashboard from './pages/UserDashboard';
 import SetPassword from './pages/SetPassword';
+import AttendanceStats from './pages/AttendanceStats';
 import UploadExcel from './pages/UploadExcel';
 import LoggedInUsers from './pages/LoggedInUsers';
 import Layout from './components/Layout';
@@ -25,6 +26,7 @@ function App() {
         <Route element={<Layout />}>
           {/* Admin routes */}
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/attendance-stats" element={<AttendanceStats />} />
           <Route path="/upload-excel" element={<UploadExcel />} />
           <Route path="/logged-in-users" element={<LoggedInUsers />} />
           <Route path="/admin/update-email" element={<UpdateUserEmail />} />

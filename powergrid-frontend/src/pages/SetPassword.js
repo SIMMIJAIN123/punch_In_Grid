@@ -1,34 +1,43 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';  // import useNavigate
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from '../api/axiosConfig';
 
 function SetPasswordForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-  const navigate = useNavigate();  // initialize navigate here
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Get email from localStorage if available
+    const userEmail = localStorage.getItem('userEmail');
+    if (userEmail) {
+      setEmail(userEmail);
+    } else {
+      // If no email in localStorage, redirect to login
+      navigate('/');
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:8000/auth/set-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+      const response = await axios.post('/service-auth-powerGrid/v1/endpoint/set-password', {
+        email,
+        password
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage(data.message || 'Password set successfully!');
-        navigate('/user-dashboard');  // redirect here
-      } else {
-        setMessage(data.detail || 'Failed to set password.');
+      if (response.data) {
+        setMessage('Password set successfully! Please login again.');
+        // Clear stored email
+        localStorage.removeItem('userEmail');
+        
+        // Redirect to login after 2 seconds
+        setTimeout(() => navigate('/'), 2000);
       }
     } catch (error) {
-      setMessage('Error: ' + error.message);
+      setMessage(error.response?.data?.detail || 'Failed to set password.');
     }
   };
 
@@ -43,6 +52,7 @@ function SetPasswordForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={email !== ''} // Disable if email is pre-filled
             style={{ width: '100%', padding: 8 }}
           />
         </div>

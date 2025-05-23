@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from '../api/axiosConfig';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -10,42 +11,42 @@ export default function Login() {
     e.preventDefault();
   
     try {
-      const response = await fetch('http://localhost:8000/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      const response = await axios.post('/service-auth-powerGrid/v1/endpoint/login', {
+        email,
+        password
       });
   
-      const data = await response.json();
+      const data = response.data;
+
+      // First store the email for set-password page
+      localStorage.setItem('userEmail', email);
+      
+      // Check if user needs to set password
+      if (data.is_active === "false") {
+        navigate('/set-password');
+        return;
+      }
+      
+      // If user is active, store other data and redirect
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('role', data.role);
+      localStorage.setItem('empId', data.emp_id);
+      localStorage.setItem('isActive', data.is_active);
   
-      if (response.ok) {
-        // Save token and role
-        localStorage.setItem('token', data.access_token);
-        localStorage.setItem('role', data.role);
-  
-        // Redirect based on role and password status
-        if (data.role === 'admin') {
-          navigate('/admin-dashboard');
-        } else if (data.role === 'user') {
-          if (data.password_set === false) {
-            navigate('/set-password'); // this is enough
-          } else {
-            navigate('/user-dashboard');
-          }
-        } else {
-          alert('Unknown role, cannot redirect');
-        }
+      // Redirect based on role
+      if (data.role === 'admin') {
+        navigate('/admin-dashboard');
       } else {
-        // 🔥 Catch specific error from backend
-        if (data.detail === 'First you need to set your password') {
-          navigate('/set-password');
-        } else {
-          alert(data.detail || 'Login failed');
-        }
+        navigate('/user-dashboard');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      alert('Something went wrong. Please try again.');
+      const errorMessage = error.response?.data?.detail || 'Login failed';
+      if (errorMessage.includes('First you need to set your password')) {
+        localStorage.setItem('userEmail', email);
+        navigate('/set-password');
+      } else {
+        alert(errorMessage);
+      }
     }
   };
   
@@ -69,7 +70,6 @@ export default function Login() {
         />
         <button type="submit">Login</button>
       </form>
-
     </div>
   );
 }

@@ -4,6 +4,15 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import UpdateUserEmail from "./pages/UpdateUserEmail";
+// Replace the PdfUpload route with ExcelUpload
+import ExcelUpload from './pages/admin/ExcelUpload';
+
+// Inside your router configuration, update the route:
+{
+  path: '/admin/excel-upload',
+  element: <ProtectedRoute><ExcelUpload /></ProtectedRoute>
+}
+import AttendanceFilter from './pages/AttendanceFilter';
 
 function AppRouter() {
   return (
@@ -14,6 +23,15 @@ function AppRouter() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/admin/update-email" element={<UpdateUserEmail />} />
+        // Inside your router configuration, add these routes:
+        {
+          path: '/admin/pdf-upload',
+          element: <ProtectedRoute><PdfUpload /></ProtectedRoute>
+        },
+        {
+          path: '/admin/attendance-filter',
+          element: <ProtectedRoute><AttendanceFilter /></ProtectedRoute>
+        }
       </Routes>
     </Router>
   );

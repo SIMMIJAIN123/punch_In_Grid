@@ -17,7 +17,7 @@ export default function LoggedInUsers() {
           return;
         }
 
-        const response = await axios.get('/auth/logged_in_users', {
+        const response = await axios.get('/service-auth-powerGrid/v1/endpoint/logged_in_users', {
           headers: {
             'Authorization': `Bearer ${token}`,
           },

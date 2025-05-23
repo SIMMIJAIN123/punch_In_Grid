@@ -44,5 +44,20 @@ class AuthUserManager:
 
     def update_user_email_by_admin(self, emp_id: str, new_email: str):
         return self.service.update_user_email_by_admin(emp_id, new_email)
+    
+    def fetch_attendance_by_empcode(self, empcode: str):
+        return self.service.fetch_attendance_by_empcode(empcode)
+    
+    def parse_and_store_attendance(self, text: str):
+        return self.service.parse_and_store_attendance(text)
+
+    def fetch_attendance_by_date_range(self, start_date: str, end_date: str, name: str = None):
+        return self.service.fetch_attendance_by_date_range(start_date, end_date, name)
+    
+    def fetch_all_attendance_data(self):
+        return self.service.fetch_all_attendance_data()
+
+    def bulk_index_attendance(self, records):
+        return self.service.bulk_index_attendance(records)
 
 auth_user_manager = AuthUserManager()

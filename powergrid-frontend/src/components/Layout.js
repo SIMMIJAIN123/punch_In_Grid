@@ -83,38 +83,18 @@ const Layout = () => {
             </div>
             
             <div className="attendance-cards">
-              <div className="attendance-card">
-                <div className="card-title">Monthly Summary</div>
-                <div className="card-content">
-                  <div className="stat-item">
-                    <span className="stat-label">Punch-ins:</span>
-                    <span className="stat-value">18</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Punch-outs:</span>
-                    <span className="stat-value">17</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Present Days:</span>
-                    <span className="stat-value">18/22</span>
-                  </div>
-                </div>
-              </div>
+             
               
               <div className="attendance-card">
                 <div className="card-title">Today's Status</div>
                 <div className="card-content">
                   <div className="stat-item">
-                    <span className="stat-label">Punch-in:</span>
-                    <span className="stat-value">09:15 AM</span>
+                    <span className="stat-label">Intime</span>
+                    <span className="stat-value"></span>
                   </div>
                   <div className="stat-item">
-                    <span className="stat-label">Punch-out:</span>
-                    <span className="stat-value">--:--</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Working Hours:</span>
-                    <span className="stat-value">2h 45m</span>
+                    <span className="stat-label">Outtime</span>
+                    <span className="stat-value"></span>
                   </div>
                 </div>
               </div>
@@ -123,16 +103,8 @@ const Layout = () => {
                 <div className="card-title">Overtime</div>
                 <div className="card-content">
                   <div className="stat-item">
-                    <span className="stat-label">This Month:</span>
-                    <span className="stat-value">8h 30m</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Last Month:</span>
-                    <span className="stat-value">12h 15m</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Average/Week:</span>
-                    <span className="stat-value">2h 10m</span>
+                    <span className="stat-label">Total</span>
+                    <span className="stat-value"></span>
                   </div>
                 </div>
               </div>
@@ -141,16 +113,8 @@ const Layout = () => {
                 <div className="card-title">Late Arrivals</div>
                 <div className="card-content">
                   <div className="stat-item">
-                    <span className="stat-label">This Month:</span>
-                    <span className="stat-value">3</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Last Month:</span>
-                    <span className="stat-value">2</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Today's Status:</span>
-                    <span className="stat-value late">15 min late</span>
+                    <span className="stat-label">Total</span>
+                    <span className="stat-value"></span>
                   </div>
                 </div>
               </div>

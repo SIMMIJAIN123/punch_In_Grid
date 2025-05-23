@@ -2,15 +2,24 @@ import axios from 'axios';
 
 const instance = axios.create({
   baseURL: 'http://localhost:8000',
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
-// Add a request interceptor to include the token in all requests
+// Add request interceptor to add token and handle content type
 instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Don't set Content-Type for FormData (let browser set it automatically)
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+    
     return config;
   },
   (error) => {
@@ -18,29 +27,15 @@ instance.interceptors.request.use(
   }
 );
 
-// Add a response interceptor for error handling
+// Add response interceptor to handle auth errors
 instance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response) {
-      // Handle session expiration
-      if (error.response.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        window.location.href = '/';
-        return Promise.reject(new Error('Session expired. Please login again.'));
-      }
-      // Handle forbidden access
-      if (error.response.status === 403) {
-        return Promise.reject(new Error('You do not have permission to perform this action.'));
-      }
-      // Handle server errors
-      if (error.response.status >= 500) {
-        return Promise.reject(new Error('Server error. Please try again later.'));
-      }
-    } else if (error.request) {
-      // Network error
-      return Promise.reject(new Error('Network error. Please check your connection.'));
+    if (error.response?.status === 403) {
+      // Clear invalid token
+      localStorage.removeItem('token');
+      // Redirect to login
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
