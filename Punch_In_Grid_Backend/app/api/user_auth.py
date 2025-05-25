@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.security import OAuth2PasswordBearer
@@ -121,22 +120,25 @@ def get_attendance_data(token: str = Depends(oauth2_scheme)):
 def get_attendance_by_date_range(
     start_date: str = None,
     end_date: str = None,
-    name: str = None,
+    employee_id: str = None,
     token: str = Depends(oauth2_scheme)
 ):
     user = get_current_user(token)
-    if not user or user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
 
-    if not any([start_date, end_date, name]):
-        raise HTTPException(status_code=400, detail="At least one filter (start_date, end_date, or name) is required.")
+    # If not admin, only allow access to own data
+    if user.get("role") != "admin":
+        employee_id = user.get("emp_id")
 
-    records = auth_user_manager.fetch_attendance_by_date_range(start_date, end_date, name)
+    if not start_date or not end_date:
+        raise HTTPException(status_code=400, detail="Both start_date and end_date are required.")
+
+    records = auth_user_manager.fetch_attendance_by_date_range(start_date, end_date, employee_id)
     return {
         "message": "Filtered attendance records",
         "data": records
     }
-
 
 @router.get("/attendance_data/{empcode}")
 def get_attendance_by_empcode(empcode: str, token: str = Depends(oauth2_scheme)):
