@@ -124,38 +124,27 @@ export default function UserDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Month/Year Filter */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <div className="flex gap-4 items-center">
-            <Select
-              options={months}
-              value={months.find(m => m.value === selectedMonth)}
-              onChange={(option) => setSelectedMonth(option.value)}
-              placeholder="Select Month"
-              className="w-48"
-            />
-            <Select
-              options={years}
-              value={years.find(y => y.value === selectedYear)}
-              onChange={(option) => setSelectedYear(option.value)}
-              placeholder="Select Year"
-              className="w-48"
-            />
-          </div>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
-            <p className="text-red-700">{error}</p>
-          </div>
-        )}
-
         {/* Attendance Overview Section */}
         <header className="dashboard-header">
           <div className="month-selector-container">
             <h3 className="dashboard-title">Attendance Overview</h3>
             <div className="month-selector">
-              <label>View data for: {months.find(m => m.value === selectedMonth)?.label} {selectedYear}</label>
+              <div className="flex gap-3">
+                <Select
+                  options={months}
+                  value={months.find(m => m.value === selectedMonth)}
+                  onChange={(option) => setSelectedMonth(option.value)}
+                  placeholder="Month"
+                  className="w-32 text-sm"
+                />
+                <Select
+                  options={years}
+                  value={years.find(y => y.value === selectedYear)}
+                  onChange={(option) => setSelectedYear(option.value)}
+                  placeholder="Year"
+                  className="w-28 text-sm"
+                />
+              </div>
             </div>
           </div>
           
