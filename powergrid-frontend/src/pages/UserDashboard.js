@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from '../api/axiosConfig';
 import Select from 'react-select';
 import { format } from 'date-fns';
+import '../styles/Layout.css';
 
 export default function UserDashboard() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -149,72 +150,73 @@ export default function UserDashboard() {
           </div>
         )}
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Box 1: Total & Missed Punches */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Attendance</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total Punches</span>
-                <span className="text-xl font-semibold text-blue-600">{stats.totalPunches}</span>
+        {/* Attendance Overview Section */}
+        <header className="dashboard-header">
+          <div className="month-selector-container">
+            <h3 className="dashboard-title">Attendance Overview</h3>
+            <div className="month-selector">
+              <label>View data for: {months.find(m => m.value === selectedMonth)?.label} {selectedYear}</label>
+            </div>
+          </div>
+          
+          <div className="attendance-cards">
+            <div className="attendance-card">
+              <div className="card-title">Monthly Attendance</div>
+              <div className="card-content">
+                <div className="stat-item">
+                  <span className="stat-label">Total Punches</span>
+                  <span className="stat-value">{stats.totalPunches}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Missed Punches</span>
+                  <span className="stat-value">{stats.missedPunches}</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Missed Punches</span>
-                <span className="text-xl font-semibold text-red-600">{stats.missedPunches}</span>
+            </div>
+            
+            <div className="attendance-card">
+              <div className="card-title">Today's Status</div>
+              <div className="card-content">
+                <div className="stat-item">
+                  <span className="stat-label">Intime</span>
+                  <span className="stat-value">{stats.todayPunchIn}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Outtime</span>
+                  <span className="stat-value">{stats.todayPunchOut}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="attendance-card">
+              <div className="card-title">Overtime</div>
+              <div className="card-content">
+                <div className="stat-item">
+                  <span className="stat-label">Monthly Total</span>
+                  <span className="stat-value">{Math.floor(stats.monthlyOvertime / 60)}h {stats.monthlyOvertime % 60}m</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Today</span>
+                  <span className="stat-value">{Math.floor(stats.todayOvertime / 60)}h {stats.todayOvertime % 60}m</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="attendance-card">
+              <div className="card-title">Late Arrivals</div>
+              <div className="card-content">
+                <div className="stat-item">
+                  <span className="stat-label">Monthly Total</span>
+                  <span className="stat-value">{stats.monthlyLate}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Today</span>
+                  <span className="stat-value">{stats.todayLate}</span>
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Box 2: Today's Punch Times */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Status</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Punch In</span>
-                <span className="text-xl font-semibold text-green-600">{stats.todayPunchIn}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Punch Out</span>
-                <span className="text-xl font-semibold text-green-600">{stats.todayPunchOut}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Box 3: Overtime */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Overtime</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Monthly Total</span>
-                <span className="text-xl font-semibold text-purple-600">
-                  {Math.floor(stats.monthlyOvertime / 60)}h {stats.monthlyOvertime % 60}m
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Today</span>
-                <span className="text-xl font-semibold text-purple-600">
-                  {Math.floor(stats.todayOvertime / 60)}h {stats.todayOvertime % 60}m
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Box 4: Late Arrivals */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-orange-500">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Late Arrivals</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Monthly Total</span>
-                <span className="text-xl font-semibold text-orange-600">{stats.monthlyLate}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Today</span>
-                <span className="text-xl font-semibold text-orange-600">{stats.todayLate}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        </header>
       </div>
     </div>
   );
