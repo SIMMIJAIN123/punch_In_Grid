@@ -127,22 +127,46 @@ export default function UserDashboard() {
         {/* Attendance Overview Section */}
         <header className="dashboard-header">
           <div className="month-selector-container">
-            <h3 className="dashboard-title">Attendance Overview</h3>
-            <div className="month-selector">
-              <div className="flex gap-3">
+            <div className="flex items-center justify-between">
+              <h3 className="dashboard-title">Attendance Overview</h3>
+              <div className="flex gap-2">
                 <Select
                   options={months}
                   value={months.find(m => m.value === selectedMonth)}
                   onChange={(option) => setSelectedMonth(option.value)}
                   placeholder="Month"
-                  className="w-32 text-sm"
+                  className="text-sm"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      minHeight: '32px',
+                      height: '32px',
+                      width: 'max-content'
+                    }),
+                    container: (base) => ({
+                      ...base,
+                      width: 'max-content'
+                    })
+                  }}
                 />
                 <Select
                   options={years}
                   value={years.find(y => y.value === selectedYear)}
                   onChange={(option) => setSelectedYear(option.value)}
                   placeholder="Year"
-                  className="w-28 text-sm"
+                  className="text-sm"
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      minHeight: '32px',
+                      height: '32px',
+                      width: 'max-content'
+                    }),
+                    container: (base) => ({
+                      ...base,
+                      width: 'max-content'
+                    })
+                  }}
                 />
               </div>
             </div>
