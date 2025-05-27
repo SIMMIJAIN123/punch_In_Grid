@@ -69,11 +69,23 @@ export default function UserDashboard() {
         const monthlyData = response.data.data;
         const todayData = monthlyData.find(record => record.date === today) || {};
 
+        // Helper function to convert time string to minutes
+        const convertTimeToMinutes = (timeStr) => {
+          if (!timeStr || timeStr === '00:00') return 0;
+          const [hours, minutes] = timeStr.split(':').map(Number);
+          return (hours * 60) + minutes;
+        };
+
         // Calculate statistics
         const totalPunches = monthlyData.filter(record => record.intime).length;
         const missedPunches = monthlyData.filter(record => !record.intime).length;
         const monthlyOvertime = monthlyData.reduce((sum, record) => sum + (parseInt(record.overtime) || 0), 0);
-        const monthlyLate = monthlyData.filter(record => record.late_in === 'Y').length;
+        
+        // Calculate total late minutes for the month
+        const monthlyLateMinutes = monthlyData.reduce((sum, record) => {
+          const lateMinutes = convertTimeToMinutes(record.late_in);
+          return sum + lateMinutes;
+        }, 0);
 
         setStats({
           totalPunches,
@@ -82,8 +94,8 @@ export default function UserDashboard() {
           todayPunchOut: todayData.outtime || '--:--',
           monthlyOvertime,
           todayOvertime: parseInt(todayData.overtime) || 0,
-          monthlyLate,
-          todayLate: todayData.late_in === 'Y' ? 1 : 0
+          monthlyLate: monthlyLateMinutes,
+          todayLate: convertTimeToMinutes(todayData.late_in)
         });
       } else {
         throw new Error('Invalid data format received from server');
@@ -220,11 +232,11 @@ export default function UserDashboard() {
               <div className="card-content">
                 <div className="stat-item">
                   <span className="stat-label">Monthly Total</span>
-                  <span className="stat-value">{stats.monthlyLate}</span>
+                  <span className="stat-value">{Math.floor(stats.monthlyLate / 60)}h {stats.monthlyLate % 60}m</span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Today</span>
-                  <span className="stat-value">{stats.todayLate}</span>
+                  <span className="stat-value">{Math.floor(stats.todayLate / 60)}h {stats.todayLate % 60}m</span>
                 </div>
               </div>
             </div>

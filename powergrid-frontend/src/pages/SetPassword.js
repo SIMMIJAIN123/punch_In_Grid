@@ -15,7 +15,7 @@ function SetPasswordForm() {
       setEmail(userEmail);
     } else {
       // If no email in localStorage, redirect to login
-      navigate('/');
+      // navigate('/');
     }
   }, [navigate]);
 

@@ -22,10 +22,10 @@ export default function Login() {
       localStorage.setItem('userEmail', email);
       
       // Check if user needs to set password
-      if (data.is_active === "false") {
-        navigate('/set-password');
-        return;
-      }
+      // if (data.is_active == "false" || data.is_active == false) {
+        // navigate('/set-password');
+        // return;
+      // }
       
       // If user is active, store other data and redirect
       localStorage.setItem('token', data.access_token);
