@@ -102,8 +102,3 @@ const CompactProfile = () => {
 
 export default CompactProfile; 
 
-
-# logged in user page  and at dashaboard for both admin and user filter work in correct way 
-by default choose this month and filter must be in working
-
-# fix the code related to profile for both dashboard
