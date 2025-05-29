@@ -1,3 +1,4 @@
+# Direct Elasticsearch interactions
 from elasticsearch import Elasticsearch
 from app.config.setting import settings
 from passlib.context import CryptContext
@@ -40,7 +41,8 @@ class AuthUserService:
             return None, "User already exists"
 
         user_data["password"] = self.hash_password(user_data["password"])
-        user_data["is_active"] = False
+        # Set is_active as "false" for all users initially
+        user_data["is_active"] = "false"
 
         self.es.index(index=self.index, id=user_data["emp_id"], document=user_data)
         return user_data, None
@@ -52,26 +54,39 @@ class AuthUserService:
         if not user:
             return None
 
-        if str(user.get("is_active", "")).lower() != "true":
-            print("User not active")
-            return None
-
         if not self.verify_password(password, user["password"]):
             print("Password verification failed")
             return None
+
+        # For admin users, set is_active to true upon successful login
+        if user.get("role") == "admin":
+            user["is_active"] = "true"
+            self.es.index(index=self.index, id=user["emp_id"], document=user)
+            return user
+        
+        # For non-admin users, check is_active status
+        if str(user.get("is_active", "")).lower() != "true":
+            print("User not active")
+            return None
         
         return user
-
 
     def set_user_password(self, email: str, password: str):
         user = self.get_user_by_email(email)
         if not user:
             return None, "User not found"
+            
+        # Admin users don't need to set password
+        if user.get("role") == "admin":
+            return None, "Admin users don't need to set password"
+            
+        # Regular users can only set password once
         if user.get("is_active") == "true":
             return None, "Password already set"
 
+        # Set password and activate user
         user["password"] = self.hash_password(password)
-        user["is_active"] = True
+        user["is_active"] = "true"
 
         self.es.index(index=self.index, id=user["emp_id"], document=user)
         return user, None
@@ -92,8 +107,11 @@ class AuthUserService:
     def get_logged_in_users(self):
         query = {
             "query": {
-                "term": {
-                    "is_active": "true"
+                "bool": {
+                    "must": [
+                        {"term": {"is_active": "true"}},
+                        {"term": {"role": "user"}}
+                    ]
                 }
             }
         }
@@ -130,16 +148,16 @@ class AuthUserService:
         return user, None
     
 
-    def fetch_attendance_by_empcode(self, empcode: str):
-        query = {
-            "query": {
-                "term": {
-                    "empcode": empcode
-                }
-            }
-        }
-        resp = self.es.search(index=self.attendance_index, body=query, size=10000)
-        return [hit["_source"] for hit in resp['hits']['hits']]
+    # def fetch_attendance_by_empcode(self, empcode: str):
+    #     query = {
+    #         "query": {
+    #             "term": {
+    #                 "empcode": empcode
+    #             }
+    #         }
+    #     }
+    #     resp = self.es.search(index=self.attendance_index, body=query, size=10000)
+    #     return [hit["_source"] for hit in resp['hits']['hits']]
     
     def parse_and_store_attendance(self, text: str):
         records = []
@@ -216,41 +234,68 @@ class AuthUserService:
 
     
     def fetch_attendance_by_date_range(self, start_date: str, end_date: str, emp_id: str = None, name: str = None):
-        query = {
-            "query": {
-                "bool": {
-                    "must": [
-                        {
-                            "range": {
-                                "date": {
-                                    "gte": start_date,
-                                    "lte": end_date,
-                                    "format": "yyyy-MM-dd"
+        try:
+            query = {
+                "query": {
+                    "bool": {
+                        "must": [
+                            {
+                                "range": {
+                                    "date": {
+                                        "gte": start_date,
+                                        "lte": end_date,
+                                        "format": "yyyy-MM-dd"
+                                    }
                                 }
                             }
-                        }
-                    ]
-                }
-            }
-        }
-
-        if emp_id:
-            query["query"]["bool"]["must"].append({
-                "term": {
-                    "empcode": emp_id
-                }
-            })
-
-        if name:
-            query["query"]["bool"]["must"].append({
-                "match": {
-                    "name": {
-                        "query": name,
-                        "operator": "and"
+                        ]
                     }
-                }
-            })
+                },
+                "sort": [
+                    { "date": { "order": "asc" } }
+                ]
+            }
 
-        print("DEBUG: Attendance Query", query)
-        resp = self.es.search(index=self.attendance_index, body=query, size=10000)
-        return [hit["_source"] for hit in resp['hits']['hits']]
+            if emp_id:
+                query["query"]["bool"]["must"].append({
+                    "term": {
+                        "empcode": emp_id
+                    }
+                })
+
+            if name:
+                query["query"]["bool"]["must"].append({
+                    "match": {
+                        "name": {
+                            "query": name,
+                            "operator": "and"
+                        }
+                    }
+                })
+
+            resp = self.es.search(index=self.attendance_index, body=query, size=10000)
+            records = [hit["_source"] for hit in resp['hits']['hits']]
+
+            # Process records to ensure consistent time format
+            for record in records:
+                # Handle empty or invalid time values
+                record['intime'] = record.get('intime', '--:--') or '--:--'
+                record['outtime'] = record.get('outtime', '--:--') or '--:--'
+                record['overtime'] = record.get('overtime', '--:--') or '--:--'
+                record['late_in'] = record.get('late_in', '--:--') or '--:--'
+                record['early_out'] = record.get('early_out', '--:--') or '--:--'
+                
+                # Ensure date is in correct format
+                try:
+                    date_obj = datetime.strptime(record['date'], '%Y-%m-%d')
+                    record['date'] = date_obj.strftime('%Y-%m-%d')
+                except (ValueError, TypeError):
+                    record['date'] = None
+
+            # Filter out records with invalid dates
+            records = [r for r in records if r['date'] is not None]
+            
+            return records
+        except Exception as e:
+            print(f"Error in fetch_attendance_by_date_range: {str(e)}")
+            return []

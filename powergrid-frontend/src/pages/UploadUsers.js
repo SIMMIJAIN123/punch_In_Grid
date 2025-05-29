@@ -74,10 +74,12 @@ const UploadUsers = () => {
           <h4>Excel Template Format</h4>
           <p>Your Excel file should have the following columns:</p>
           <ul>
-            <li>Name (required)</li>
-            <li>Email (required)</li>
-            <li>Employee ID (required)</li>
-            <li>Role ("user")</li>
+            <li>emp_id (required)</li>
+            <li>name (required)</li>
+            <li>email (required)</li>
+            <li>password (empty)</li>
+            <li>is_active (false)</li>
+            <li>role (user)</li>
           </ul>
           <a href="/template.xlsx" download className="download-link">Download Template</a>
         </div>

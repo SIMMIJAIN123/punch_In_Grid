@@ -1,3 +1,4 @@
+# creates and verifies JWT tokens for user authentication.
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from typing import Optional
@@ -12,6 +13,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+# if token is valid and not expiered then return inside the data of user info.
 def decode_access_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

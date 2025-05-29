@@ -32,12 +32,7 @@ const Sidebar = ({ userRole }) => {
           </>
         )}
         
-        {/* User-only links */}
-        {userRole === 'user' && (
-          <>
-            <Link to="/user-profile">My Profile</Link>
-          </>
-        )}
+
       </div>
       
       <div className="sidebar-footer">

@@ -8,10 +8,10 @@ import UpdateUserEmail from "./pages/UpdateUserEmail";
 import ExcelUpload from './pages/admin/ExcelUpload';
 
 // Inside your router configuration, update the route:
-{
-  path: '/admin/excel-upload',
-  element: <ProtectedRoute><ExcelUpload /></ProtectedRoute>
-}
+// {
+//   path: '/admin/excel-upload',
+//   element: <ProtectedRoute><ExcelUpload /></ProtectedRoute>
+// }
 import AttendanceFilter from './pages/AttendanceFilter';
 
 function AppRouter() {

@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.security import OAuth2PasswordBearer
 from app.manager.user_auth_manager import SetPasswordRequest
 from app.manager.user_auth_manager import (
@@ -8,10 +7,7 @@ from app.manager.user_auth_manager import (
 )
 from app.utils.jwt_helper import create_access_token, decode_access_token
 from datetime import timedelta
-
-import pdfplumber  
-import io
-from fastapi import APIRouter, UploadFile, File, HTTPException
+# import io
 import pandas as pd
 from io import BytesIO
 
@@ -27,14 +23,14 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         return None
 
 @router.post("/register", response_model=UserResponse)
-def register(user_req: RegisterRequest):
+async def register(user_req: RegisterRequest):
     user, error = auth_user_manager.register(user_req)
     if error:
         raise HTTPException(status_code=400, detail=error)
     return user
 
 @router.post("/login", response_model=LoginSuccessResponse)
-def login(login_req: LoginRequest):
+async def login(login_req: LoginRequest):
     user, error = auth_user_manager.login(login_req)
     if error or not user:
         raise HTTPException(status_code=401, detail=error or "Invalid credentials")
@@ -53,13 +49,13 @@ def login(login_req: LoginRequest):
         "email": user["email"],
         "role": user["role"],
         "is_active": user["is_active"],
-        "password_set": user["is_active"] == "true",  # Add this line
+        "password_set": user["is_active"] == "true",
         "access_token": access_token,
         "token_type": "bearer"
     }
 
 @router.post("/upload_excel")
-def upload_excel(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
+async def upload_excel(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
     user = get_current_user(token)
     if not user or user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -71,17 +67,18 @@ def upload_excel(file: UploadFile = File(...), token: str = Depends(oauth2_schem
     }
 
 @router.post("/set-password")
-def set_password(set_pass_req: SetPasswordRequest):
+async def set_password(set_pass_req: SetPasswordRequest):
     user, error = auth_user_manager.set_password(set_pass_req)
     if error:
         raise HTTPException(status_code=400, detail=error)
     return {"message": "Password set successfully. You can now login."}
 
 @router.get("/logged_in_users")
-def get_logged_in_users(token: str = Depends(oauth2_scheme)):
+async def get_logged_in_users(token: str = Depends(oauth2_scheme)):
     user = get_current_user(token)
     if not user or user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
+
 
     logged_in_users = auth_user_manager.get_logged_in_users()
     return {
@@ -90,7 +87,7 @@ def get_logged_in_users(token: str = Depends(oauth2_scheme)):
     }
 
 @router.put("/admin/users/{emp_id}/email")
-def update_user_email(emp_id: str, new_email: str, token: str = Depends(oauth2_scheme)):
+async def update_user_email(emp_id: str, new_email: str, token: str = Depends(oauth2_scheme)):
     user = get_current_user(token)
     if not user or user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -105,7 +102,7 @@ def update_user_email(emp_id: str, new_email: str, token: str = Depends(oauth2_s
     }
 
 @router.get("/attendance_data")
-def get_attendance_data(token: str = Depends(oauth2_scheme)):
+async def get_attendance_data(token: str = Depends(oauth2_scheme)):
     user = get_current_user(token)
     if not user or user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -117,7 +114,7 @@ def get_attendance_data(token: str = Depends(oauth2_scheme)):
     }
 
 @router.get("/attendance_data/filter")
-def get_attendance_by_date_range(
+async def get_attendance_by_date_range(
     start_date: str = None,
     end_date: str = None,
     employee_id: str = None,
@@ -140,17 +137,17 @@ def get_attendance_by_date_range(
         "data": records
     }
 
-@router.get("/attendance_data/{empcode}")
-def get_attendance_by_empcode(empcode: str, token: str = Depends(oauth2_scheme)):
-    user = get_current_user(token)
-    if not user or user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
+# @router.get("/attendance_data/{empcode}")
+# def get_attendance_by_empcode(empcode: str, token: str = Depends(oauth2_scheme)):
+#     user = get_current_user(token)
+#     if not user or user.get("role") != "admin":
+#         raise HTTPException(status_code=403, detail="Not authorized")
 
-    records = auth_user_manager.fetch_attendance_by_empcode(empcode)
-    return {
-        "message": f"Attendance for empcode {empcode}",
-        "data": records
-    }
+#     records = auth_user_manager.fetch_attendance_by_empcode(empcode)
+#     return {
+#         "message": f"Attendance for empcode {empcode}",
+#         "data": records
+#     }
 
 @router.post("/upload_attendance_excel")
 async def upload_attendance_excel(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):

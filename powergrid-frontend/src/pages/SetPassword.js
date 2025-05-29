@@ -34,7 +34,8 @@ function SetPasswordForm() {
         localStorage.removeItem('userEmail');
         
         // Redirect to login after 2 seconds
-        setTimeout(() => navigate('/'), 2000);
+        // setTimeout(() => navigate('/'), 2000);
+        navigate('/')
       }
     } catch (error) {
       setMessage(error.response?.data?.detail || 'Failed to set password.');
@@ -74,5 +75,5 @@ function SetPasswordForm() {
     </div>
   );
 }
-
 export default SetPasswordForm;
+

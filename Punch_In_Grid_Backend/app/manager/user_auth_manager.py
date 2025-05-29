@@ -1,4 +1,4 @@
-
+# THis is Bridge between router (user-auth.py) and services (user_auth_services.py)
 from pydantic import BaseModel, EmailStr, Field
 import pandas as pd
 from app.services.user_auth_services import AuthUserService
@@ -23,17 +23,24 @@ class AuthUserManager:
         if not user:
             return None, "Invalid email or password"
 
-        if user.get("is_active") == "false":
+        # For non-admin users, check is_active before password
+        if user.get("role") != "admin" and user.get("is_active") == "false":
             return None, "First you need to set your password"
 
+        # Verify password for all users
         if not self.service.verify_password(login_req.password, user["password"]):
             return None, "Invalid email or password"
+
+        # If admin login successful, set is_active to true
+        if user.get("role") == "admin":
+            user["is_active"] = "true"
+            self.service.es.index(index=self.service.index, id=user["emp_id"], document=user)
 
         return user, None
 
     def bulk_register_from_excel(self, file):
         df = pd.read_excel(file)
-        users = df.to_dict(orient="records")
+        users = df.to_dict(orient="records")  # converts DataFrame to list of dicts
         return self.service.bulk_register_users(users)
 
     def set_password(self, set_pass_req: SetPasswordRequest):
@@ -48,8 +55,8 @@ class AuthUserManager:
     def fetch_attendance_by_empcode(self, empcode: str):
         return self.service.fetch_attendance_by_empcode(empcode)
     
-    def parse_and_store_attendance(self, text: str):
-        return self.service.parse_and_store_attendance(text)
+    # def parse_and_store_attendance(self, text: str):
+    #     return self.service.parse_and_store_attendance(text)
 
     def fetch_attendance_by_date_range(self, start_date: str, end_date: str, name: str = None):
         return self.service.fetch_attendance_by_date_range(start_date, end_date, name)

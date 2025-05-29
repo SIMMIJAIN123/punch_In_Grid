@@ -45,7 +45,7 @@ body {
 }
 
 .container {
-  max-width: 400px;
+  max-width: 1200px;
   margin: 60px auto;
   background: #fff;
   padding: 30px 40px;
@@ -164,4 +164,26 @@ button:hover {
 .profile-details strong {
   color: #333;
   margin-right: 10px;
+}
+
+.month-filter {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.month-filter label {
+  font-weight: 600;
+  color: #333;
+}
+
+.month-input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
 }
