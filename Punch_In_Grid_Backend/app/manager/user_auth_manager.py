@@ -23,18 +23,11 @@ class AuthUserManager:
         if not user:
             return None, "Invalid email or password"
 
-        # For non-admin users, check is_active before password
-        if user.get("role") != "admin" and user.get("is_active") == "false":
             return None, "First you need to set your password"
+        
 
-        # Verify password for all users
         if not self.service.verify_password(login_req.password, user["password"]):
             return None, "Invalid email or password"
-
-        # If admin login successful, set is_active to true
-        if user.get("role") == "admin":
-            user["is_active"] = "true"
-            self.service.es.index(index=self.service.index, id=user["emp_id"], document=user)
 
         return user, None
 
