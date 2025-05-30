@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../api/axiosConfig';
+import '../styles/AuthPages.css';
 
 const ProfileCard = () => {
   const [profileData, setProfileData] = useState({
@@ -54,22 +55,27 @@ const ProfileCard = () => {
   }
 
   return (
-    <div className="profile-card">
+    <div className="profile-section">
       <div className="profile-header">
         <div className="profile-avatar">
           {profileData.name.charAt(0).toUpperCase()}
         </div>
-        <h3 className="profile-name">{profileData.name}</h3>
-        <span className="profile-role">{profileData.role.charAt(0).toUpperCase() + profileData.role.slice(1)}</span>
-      </div>
-      <div className="profile-details">
-        <div className="profile-info-item">
-          <span className="info-label">Employee ID</span>
-          <span className="info-value">{profileData.emp_id}</span>
+        <div className="profile-info">
+          <h2 className="profile-name">{profileData.name}</h2>
+          <span className="profile-role">
+            {profileData.role.charAt(0).toUpperCase() + profileData.role.slice(1)}
+          </span>
         </div>
-        <div className="profile-info-item">
-          <span className="info-label">Email</span>
-          <span className="info-value">{profileData.email}</span>
+      </div>
+
+      <div className="profile-stats">
+        <div className="stat-card">
+          <div className="stat-label">Employee ID</div>
+          <div className="stat-value">{profileData.emp_id}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Email</div>
+          <div className="stat-value">{profileData.email}</div>
         </div>
       </div>
     </div>

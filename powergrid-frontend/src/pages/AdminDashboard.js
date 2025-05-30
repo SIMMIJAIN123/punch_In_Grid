@@ -16,6 +16,11 @@ export default function AdminDashboard() {
     periodLate: 0,
     todayLate: 0
   });
+  const [userProfile, setUserProfile] = useState({
+    name: '',
+    empId: '',
+    email: ''
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [dateRange, setDateRange] = useState(() => {
@@ -30,8 +35,25 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (dateRange.startDate && dateRange.endDate) {
       fetchAdminAttendance();
+      fetchUserProfile();
     }
   }, [dateRange]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const empId = localStorage.getItem('empId');
+      const email = localStorage.getItem('email');
+      const name = localStorage.getItem('name');
+      
+      setUserProfile({
+        name: name || '',
+        empId: empId || '',
+        email: email || ''
+      });
+    } catch (err) {
+      console.error('Error setting user profile:', err);
+    }
+  };
 
   const convertTimeToMinutes = (timeStr) => {
     if (!timeStr || timeStr === '--:--' || timeStr === '00:00') return 0;
@@ -127,10 +149,22 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Profile Section */}
+        <div className="mb-6">
+          <div className="bg-white rounded-lg shadow-sm p-4 inline-block">
+            <div className="flex flex-col">
+              <span className="text-xl font-semibold text-gray-800 mb-4">Name: {userProfile.name}</span>
+              {/* <span className="text-sm text-gray-600 mb-4">Employee ID: {userProfile.empId}</span>
+              <span className="text-sm text-gray-600">Email: {userProfile.email}</span> */}
+            </div>
+          </div>
+        </div>
+
         {/* Date Range Filter */}
-        <div className="date-range-filter mb-6">
+        <div className="date-range-filter mb-6 flex justify-end">
+          
           <h3 className="text-lg font-semibold mb-4">Select Date Range</h3>
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-4 items-end">
             <div className="filter-group">
               <label htmlFor="startDate">Start Date:</label>
               <input
@@ -164,7 +198,9 @@ export default function AdminDashboard() {
 
         {/* Admin's Attendance Cards */}
         <div className="mb-8">
-          <h4 className="text-lg font-semibold mb-4">My Attendance ({dateRange.startDate} to {dateRange.endDate})</h4>
+          <h4 className="text-lg font-semibold mb-4">My Attendance 
+            {/* ({dateRange.startDate} to {dateRange.endDate}) */}
+            </h4>
           <div className="attendance-cards">
             <div className="attendance-card">
               <div className="card-title">Period Attendance</div>

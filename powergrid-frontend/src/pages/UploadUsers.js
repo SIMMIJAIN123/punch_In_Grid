@@ -81,7 +81,6 @@ const UploadUsers = () => {
             <li>is_active (false)</li>
             <li>role (user)</li>
           </ul>
-          <a href="/template.xlsx" download className="download-link">Download Template</a>
         </div>
       </div>
     </div>

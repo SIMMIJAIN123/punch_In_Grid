@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../api/axiosConfig';
 import { format } from 'date-fns';
-import '../styles/Layout.css';
+import '../styles/AuthPages.css';
 
 export default function LoggedInUsers() {
   const [users, setUsers] = useState([]);
@@ -174,14 +174,11 @@ export default function LoggedInUsers() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6">Logged In Users</h2>
-
-        {/* Date Range Filter */}
-        <div className="date-range-filter mb-6">
-          <h3 className="text-lg font-semibold mb-4">Select Date Range</h3>
-          <div className="flex gap-4 items-center">
-            <div className="filter-group">
-              <label htmlFor="startDate">Start Date:</label>
+        <div className="date-range-filter">
+          <h3>Select Date Range</h3>
+          <div className="date-inputs">
+            <div className="date-input-group">
+              <label htmlFor="startDate">Start Date</label>
               <input
                 type="date"
                 id="startDate"
@@ -189,11 +186,10 @@ export default function LoggedInUsers() {
                 value={dateRange.startDate}
                 onChange={handleDateChange}
                 max={dateRange.endDate}
-                className="date-input"
               />
             </div>
-            <div className="filter-group">
-              <label htmlFor="endDate">End Date:</label>
+            <div className="date-input-group">
+              <label htmlFor="endDate">End Date</label>
               <input
                 type="date"
                 id="endDate"
@@ -202,113 +198,124 @@ export default function LoggedInUsers() {
                 onChange={handleDateChange}
                 min={dateRange.startDate}
                 max={format(new Date(), 'yyyy-MM-dd')}
-                className="date-input"
               />
             </div>
           </div>
         </div>
 
-        {loading && <div className="loading-message">Loading data...</div>}
-        {error && <div className="error-message">{error}</div>}
+        <div className="users-list-container">
+          <div className="users-list-header">
+            <h2>Logged In Users</h2>
+          </div>
 
-        {!loading && !error && (
-          <div className="users-list">
-            {users.length > 0 ? users.map((user) => (
-              <div key={user.emp_id} className="user-accordion-item">
-                <div 
-                  className="user-accordion-header"
-                  onClick={() => handleUserClick(user)}
-                >
-                  <span>{user.name || 'Unknown'} ({user.email || 'No email'})</span>
-                  <span>{expandedUser === user.emp_id ? '▼' : '▶'}</span>
-                </div>
-                
-                {expandedUser === user.emp_id && attendanceStats && (
-                  <div className="user-accordion-content">
-                    <h4 className="text-lg font-semibold mb-4">
-                      {user.name}'s Attendance ({dateRange.startDate} to {dateRange.endDate})
-                    </h4>
-                    <div className="attendance-cards">
-                      <div className="attendance-card">
-                        <div className="card-title">Period Attendance</div>
-                        <div className="card-content">
-                          <div className="stat-item">
-                            <span className="stat-label">In-Time Punches</span>
-                            <span className="stat-value">{attendanceStats.totalInPunches}</span>
-                          </div>
-                          <div className="stat-item">
-                            <span className="stat-label">Missed In-Time</span>
-                            <span className="stat-value">{attendanceStats.missedInPunches}</span>
-                          </div>
-                          <div className="stat-item">
-                            <span className="stat-label">Out-Time Punches</span>
-                            <span className="stat-value">{attendanceStats.totalOutPunches}</span>
-                          </div>
-                          <div className="stat-item">
-                            <span className="stat-label">Missed Out-Time</span>
-                            <span className="stat-value">{attendanceStats.missedOutPunches}</span>
+          {loading && <div className="loading-message">Loading data...</div>}
+          {error && <div className="error-message">{error}</div>}
+
+          {!loading && !error && (
+            <div className="users-list">
+              {users.length > 0 ? users.map((user) => (
+                <div key={user.emp_id} className="user-item">
+                  <div className="user-header" onClick={() => handleUserClick(user)}>
+                    <div className="user-avatar">
+                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div className="user-info">
+                      <div className="user-name">{user.name || 'Unknown'}</div>
+                      <div className="user-email">{user.email || 'No email'}</div>
+                    </div>
+                    <div className="user-status">Active</div>
+                    <div className={`expand-icon ${expandedUser === user.emp_id ? 'expanded' : ''}`}>
+                      {expandedUser === user.emp_id ? '▼' : '▶'}
+                    </div>
+                  </div>
+                  
+                  {expandedUser === user.emp_id && attendanceStats && (
+                    <div className="attendance-details">
+                      <h4>{user.name}'s Attendance</h4>
+                      <div className="attendance-cards">
+                        <div className="attendance-card">
+                          <div className="card-title">Period Attendance</div>
+                          <div className="card-content">
+                            <div className="stat-row">
+                              <span className="stat-label">In-Time Punches</span>
+                              <span className="stat-value">{attendanceStats.totalInPunches}</span>
+                            </div>
+                            <div className="stat-row">
+                              <span className="stat-label">Missed In-Time</span>
+                              <span className="stat-value">{attendanceStats.missedInPunches}</span>
+                            </div>
+                            <div className="stat-row">
+                              <span className="stat-label">Out-Time Punches</span>
+                              <span className="stat-value">{attendanceStats.totalOutPunches}</span>
+                            </div>
+                            <div className="stat-row">
+                              <span className="stat-label">Missed Out-Time</span>
+                              <span className="stat-value">{attendanceStats.missedOutPunches}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      
-                      <div className="attendance-card">
-                        <div className="card-title">Today's Status</div>
-                        <div className="card-content">
-                          <div className="stat-item">
-                            <span className="stat-label">Punch In</span>
-                            <span className="stat-value">{attendanceStats.todayPunchIn}</span>
-                          </div>
-                          <div className="stat-item">
-                            <span className="stat-label">Punch Out</span>
-                            <span className="stat-value">{attendanceStats.todayPunchOut}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="attendance-card">
-                        <div className="card-title">Overtime</div>
-                        <div className="card-content">
-                          <div className="stat-item">
-                            <span className="stat-label">Period Total</span>
-                            <span className="stat-value">
-                              {Math.floor(attendanceStats.periodOvertime / 60)}h {attendanceStats.periodOvertime % 60}m
-                            </span>
-                          </div>
-                          <div className="stat-item">
-                            <span className="stat-label">Today</span>
-                            <span className="stat-value">
-                              {Math.floor(attendanceStats.todayOvertime / 60)}h {attendanceStats.todayOvertime % 60}m
-                            </span>
+                        
+                        <div className="attendance-card">
+                          <div className="card-title">Today's Status</div>
+                          <div className="card-content">
+                            <div className="stat-row">
+                              <span className="stat-label">Punch In</span>
+                              <span className="stat-value">{attendanceStats.todayPunchIn}</span>
+                            </div>
+                            <div className="stat-row">
+                              <span className="stat-label">Punch Out</span>
+                              <span className="stat-value">{attendanceStats.todayPunchOut}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="attendance-card">
-                        <div className="card-title">Late Arrivals</div>
-                        <div className="card-content">
-                          <div className="stat-item">
-                            <span className="stat-label">Period Total</span>
-                            <span className="stat-value">
-                              {Math.floor(attendanceStats.periodLate / 60)}h {attendanceStats.periodLate % 60}m
-                            </span>
+                        <div className="attendance-card">
+                          <div className="card-title">Overtime</div>
+                          <div className="card-content">
+                            <div className="stat-row">
+                              <span className="stat-label">Period Total</span>
+                              <span className="stat-value">
+                                {Math.floor(attendanceStats.periodOvertime / 60)}h {attendanceStats.periodOvertime % 60}m
+                              </span>
+                            </div>
+                            <div className="stat-row">
+                              <span className="stat-label">Today</span>
+                              <span className="stat-value">
+                                {Math.floor(attendanceStats.todayOvertime / 60)}h {attendanceStats.todayOvertime % 60}m
+                              </span>
+                            </div>
                           </div>
-                          <div className="stat-item">
-                            <span className="stat-label">Today</span>
-                            <span className="stat-value">
-                              {Math.floor(attendanceStats.todayLate / 60)}h {attendanceStats.todayLate % 60}m
-                            </span>
+                        </div>
+
+                        <div className="attendance-card">
+                          <div className="card-title">Late Arrivals</div>
+                          <div className="card-content">
+                            <div className="stat-row">
+                              <span className="stat-label">Period Total</span>
+                              <span className="stat-value">
+                                {Math.floor(attendanceStats.periodLate / 60)}h {attendanceStats.periodLate % 60}m
+                              </span>
+                            </div>
+                            <div className="stat-row">
+                              <span className="stat-label">Today</span>
+                              <span className="stat-value">
+                                {Math.floor(attendanceStats.todayLate / 60)}h {attendanceStats.todayLate % 60}m
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )) : (
-              <div>No users are currently logged in.</div>
-            )}
-          </div>
-        )}
+                  )}
+                </div>
+              )) : (
+                <div className="p-4 text-center text-gray-500">
+                  No users are currently logged in.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -29,6 +29,7 @@ class UserResponse(BaseModel):
 class LoginSuccessResponse(BaseModel):
     message: str
     emp_id: str
+    name: str
     email: str
     role: str
     is_active: bool

@@ -23,11 +23,15 @@ class AuthUserManager:
         if not user:
             return None, "Invalid email or password"
 
+        if user.get("role") != "admin" and user.get("is_active") == "false":
             return None, "First you need to set your password"
         
 
         if not self.service.verify_password(login_req.password, user["password"]):
             return None, "Invalid email or password"
+        
+        if user.get("role") == "admin":
+            user["is_active"]= "true"
 
         return user, None
 

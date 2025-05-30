@@ -46,6 +46,7 @@ async def login(login_req: LoginRequest):
     return {
         "message": "Login successful",
         "emp_id": user["emp_id"],
+        "name": user["name"],
         "email": user["email"],
         "role": user["role"],
         "is_active": user["is_active"],
