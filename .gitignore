@@ -69,3 +69,5 @@ elastic-kibana/logs/
 *.xls
 *.csv
 today_attendance.json 
+
+

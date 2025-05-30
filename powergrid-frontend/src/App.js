@@ -13,6 +13,7 @@ import './App.css';
 import UploadUsers from './pages/UploadUsers';
 import UpdateUserEmail from './pages/UpdateUserEmail';
 import AttendanceFilter from './pages/AttendanceFilter';
+import UserAttendanceFilter from './pages/UserAttendanceFilter';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           
           {/* User routes */}
           <Route path="/user-dashboard" element={<UserDashboard />} />
+          <Route path="/user/attendance-filter" element={<UserAttendanceFilter />} />
         </Route>
         
         {/* Fallback route */}

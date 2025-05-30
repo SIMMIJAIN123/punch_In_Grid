@@ -32,7 +32,10 @@ const Sidebar = ({ userRole }) => {
           </>
         )}
         
-
+        {/* User-only links */}
+        {userRole === 'user' && (
+          <Link to="/user/attendance-filter">My Attendance History</Link>
+        )}
       </div>
       
       <div className="sidebar-footer">
