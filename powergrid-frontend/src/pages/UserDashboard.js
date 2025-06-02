@@ -3,11 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import axios from '../api/axiosConfig';
 import { format } from 'date-fns';
 import '../styles/Layout.css';
+import AttendanceCard from '../components/AttendanceCard';
+import moment from 'moment';
 
 export default function UserDashboard() {
   const [stats, setStats] = useState({
-    totalPunches: 0,
-    missedPunches: 0,
+    totalInPunches: 0,
+    missedInPunches: 0,
+    totalOutPunches: 0,
+    missedOutPunches: 0,
     todayPunchIn: '--:--',
     todayPunchOut: '--:--',
     periodOvertime: 0,
@@ -23,14 +27,8 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const [dateRange, setDateRange] = useState(() => {
-    const currentDate = new Date();
-    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    return {
-      startDate: format(firstDayOfMonth, 'yyyy-MM-dd'),
-      endDate: format(currentDate, 'yyyy-MM-dd')
-    };
-  });
+  const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
+  const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -38,11 +36,11 @@ export default function UserDashboard() {
       navigate('/');
       return;
     }
-    if (dateRange.startDate && dateRange.endDate) {
+    if (selectedMonth && selectedYear) {
       fetchAttendanceStats();
       fetchUserProfile();
     }
-  }, [dateRange, navigate]);
+  }, [selectedMonth, selectedYear, navigate]);
 
   const fetchUserProfile = async () => {
     try {
@@ -79,10 +77,13 @@ export default function UserDashboard() {
         throw new Error('Employee ID not found. Please log in again.');
       }
 
+      const startDate = moment(`${selectedYear}-${selectedMonth}-01`).startOf('month').format('YYYY-MM-DD');
+      const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
+
       const response = await axios.get('/service-auth-powerGrid/v1/endpoint/attendance_data/filter', {
         params: {
-          start_date: dateRange.startDate,
-          end_date: dateRange.endDate,
+          start_date: startDate,
+          end_date: endDate,
           employee_id: empId
         }
       });
@@ -96,7 +97,7 @@ export default function UserDashboard() {
         
         // Get today's data if within range
         const today = format(new Date(), 'yyyy-MM-dd');
-        const todayData = today >= dateRange.startDate && today <= dateRange.endDate ? 
+        const todayData = today >= startDate && today <= endDate ? 
           periodData.find(record => record.date === today) || {} : 
           {};
 
@@ -161,12 +162,31 @@ export default function UserDashboard() {
     }
   };
 
-  const handleDateChange = (e) => {
-    const { name, value } = e.target;
-    setDateRange(prevRange => ({
-      ...prevRange,
-      [name]: value
-    }));
+  // Array of months
+  const months = [
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' }
+  ];
+
+  // Get array of years (last 5 years to current year)
+  const getYearOptions = () => {
+    const years = [];
+    const currentYear = moment().year();
+    for (let i = 0; i < 5; i++) {
+      const year = currentYear - i;
+      years.push({ value: year.toString(), label: year.toString() });
+    }
+    return years;
   };
 
   return (
@@ -176,42 +196,46 @@ export default function UserDashboard() {
         <div className="mb-6">
           <div className="bg-white rounded-lg shadow-sm p-4 inline-block">
             <div className="flex flex-col">
-              <span className="text-xl font-semibold text-gray-800 mb-1">Name:{userProfile.name}</span>
-              {/* <span className="text-sm text-gray-600">Employee ID: {userProfile.empId}</span>
-              <span className="text-sm text-gray-600">Email: {userProfile.email}</span> */}
+              <span className="text-xl font-semibold text-gray-800 mb-1">Name: {userProfile.name}</span>
             </div>
           </div>
         </div>
 
-        {/* Date Range Filter */}
+        {/* Check In/Out Card */}
+        <div className="mb-6">
+          <AttendanceCard user={userProfile} />
+        </div>
+
+        {/* Month and Year Filter */}
         <div className="date-range-filter mb-6">
-          
-          <h3 className="text-lg font-semibold mb-4">Select Date Range</h3>
           <div className="flex gap-4 items-center">
             <div className="filter-group">
-              <label htmlFor="startDate">Start Date:</label>
-              <input
-                type="date"
-                id="startDate"
-                name="startDate"
-                value={dateRange.startDate}
-                onChange={handleDateChange}
-                max={dateRange.endDate}
-                className="date-input"
-              />
+              <label>Select Month:</label>
+              <select
+                className="date-selector"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              >
+                {months.map(month => (
+                  <option key={month.value} value={month.value}>
+                    {month.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="filter-group">
-              <label htmlFor="endDate">End Date:</label>
-              <input
-                type="date"
-                id="endDate"
-                name="endDate"
-                value={dateRange.endDate}
-                onChange={handleDateChange}
-                min={dateRange.startDate}
-                max={format(new Date(), 'yyyy-MM-dd')}
-                className="date-input"
-              />
+              <label>Select Year:</label>
+              <select
+                className="date-selector"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+              >
+                {getYearOptions().map(year => (
+                  <option key={year.value} value={year.value}>
+                    {year.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -223,7 +247,6 @@ export default function UserDashboard() {
         <div className="mb-8">
           <h4 className="text-lg font-semibold mb-4">
             My Attendance 
-            {/* ({dateRange.startDate} to {dateRange.endDate}) */}
             </h4>
           <div className="attendance-cards">
             <div className="attendance-card">
@@ -248,7 +271,7 @@ export default function UserDashboard() {
               </div>
             </div>
             
-            <div className="attendance-card">
+            {/* <div className="attendance-card">
               <div className="card-title">Today's Status</div>
               <div className="card-content">
                 <div className="stat-item">
@@ -260,7 +283,7 @@ export default function UserDashboard() {
                   <span className="stat-value">{stats.todayPunchOut}</span>
                 </div>
               </div>
-            </div>
+            </div> */}
             
             <div className="attendance-card">
               <div className="card-title">Overtime</div>

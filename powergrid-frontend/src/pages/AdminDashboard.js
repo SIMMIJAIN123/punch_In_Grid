@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from '../api/axiosConfig';
 import { format } from 'date-fns';
 import '../styles/Layout.css';
+import AttendanceCard from '../components/AttendanceCard';
+import moment from 'moment';
 
 export default function AdminDashboard() {
   const [adminStats, setAdminStats] = useState({
@@ -23,21 +25,15 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [dateRange, setDateRange] = useState(() => {
-    const currentDate = new Date();
-    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    return {
-      startDate: format(firstDayOfMonth, 'yyyy-MM-dd'),
-      endDate: format(currentDate, 'yyyy-MM-dd')
-    };
-  });
+  const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
+  const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
 
   useEffect(() => {
-    if (dateRange.startDate && dateRange.endDate) {
+    if (selectedMonth && selectedYear) {
       fetchAdminAttendance();
       fetchUserProfile();
     }
-  }, [dateRange]);
+  }, [selectedMonth, selectedYear]);
 
   const fetchUserProfile = async () => {
     try {
@@ -67,10 +63,13 @@ export default function AdminDashboard() {
       setError('');
       const empId = localStorage.getItem('empId');
 
+      const startDate = moment(`${selectedYear}-${selectedMonth}-01`).startOf('month').format('YYYY-MM-DD');
+      const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
+
       const response = await axios.get('/service-auth-powerGrid/v1/endpoint/attendance_data/filter', {
         params: {
-          start_date: dateRange.startDate,
-          end_date: dateRange.endDate,
+          start_date: startDate,
+          end_date: endDate,
           employee_id: empId
         }
       });
@@ -80,7 +79,7 @@ export default function AdminDashboard() {
         
         // Get today's data if within range
         const today = format(new Date(), 'yyyy-MM-dd');
-        const todayData = today >= dateRange.startDate && today <= dateRange.endDate ? 
+        const todayData = today >= startDate && today <= endDate ? 
           periodData.find(record => record.date === today) || {} : 
           {};
 
@@ -138,12 +137,31 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDateChange = (e) => {
-    const { name, value } = e.target;
-    setDateRange(prevRange => ({
-      ...prevRange,
-      [name]: value
-    }));
+  // Array of months
+  const months = [
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' }
+  ];
+
+  // Get array of years (last 5 years to current year)
+  const getYearOptions = () => {
+    const years = [];
+    const currentYear = moment().year();
+    for (let i = 0; i < 5; i++) {
+      const year = currentYear - i;
+      years.push({ value: year.toString(), label: year.toString() });
+    }
+    return years;
   };
 
   return (
@@ -160,35 +178,41 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Date Range Filter */}
+        {/* Check In/Out Card */}
+        <div className="mb-6">
+          <AttendanceCard user={userProfile} />
+        </div>
+
+        {/* Month and Year Filter */}
         <div className="date-range-filter mb-6 flex justify-end">
-          
-          <h3 className="text-lg font-semibold mb-4">Select Date Range</h3>
-          <div className="flex gap-4 items-end">
+          <div className="flex gap-4 items-center">
             <div className="filter-group">
-              <label htmlFor="startDate">Start Date:</label>
-              <input
-                type="date"
-                id="startDate"
-                name="startDate"
-                value={dateRange.startDate}
-                onChange={handleDateChange}
-                max={dateRange.endDate}
-                className="date-input"
-              />
+              <label>Select Month:</label>
+              <select
+                className="date-selector"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              >
+                {months.map(month => (
+                  <option key={month.value} value={month.value}>
+                    {month.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="filter-group">
-              <label htmlFor="endDate">End Date:</label>
-              <input
-                type="date"
-                id="endDate"
-                name="endDate"
-                value={dateRange.endDate}
-                onChange={handleDateChange}
-                min={dateRange.startDate}
-                max={format(new Date(), 'yyyy-MM-dd')}
-                className="date-input"
-              />
+              <label>Select Year:</label>
+              <select
+                className="date-selector"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+              >
+                {getYearOptions().map(year => (
+                  <option key={year.value} value={year.value}>
+                    {year.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -224,7 +248,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             
-            <div className="attendance-card">
+            {/* <div className="attendance-card">
               <div className="card-title">Today's Status</div>
               <div className="card-content">
                 <div className="stat-item">
@@ -236,7 +260,7 @@ export default function AdminDashboard() {
                   <span className="stat-value">{adminStats.todayPunchOut}</span>
                 </div>
               </div>
-            </div>
+            </div> */}
             
             <div className="attendance-card">
               <div className="card-title">Overtime</div>
