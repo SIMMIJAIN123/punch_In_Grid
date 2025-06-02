@@ -21,8 +21,10 @@ export default function AdminDashboard() {
   const [userProfile, setUserProfile] = useState({
     name: '',
     empId: '',
-    email: ''
+    email: '',
+    shift: ''
   });
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [dateRange, setDateRange] = useState(() => {
@@ -45,11 +47,14 @@ export default function AdminDashboard() {
       const empId = localStorage.getItem('empId');
       const email = localStorage.getItem('email');
       const name = localStorage.getItem('name');
+      const shift = localStorage.getItem('shift');
+
       
       setUserProfile({
         name: name || '',
         empId: empId || '',
-        email: email || ''
+        email: email || '',
+        shift: shift || ''
       });
     } catch (err) {
       console.error('Error setting user profile:', err);
@@ -155,16 +160,58 @@ export default function AdminDashboard() {
     });
   };
 
+  const fetchAllUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/service-auth-powerGrid/v1/endpoint/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setAllUsers(response.data || []);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllUsers();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Profile Section */}
         <div className="mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-4 inline-block">
+          <div className="bg-white rounded-lg shadow-sm p-4">
             <div className="flex flex-col">
-              <span className="text-xl font-semibold text-gray-800 mb-4">Name: {userProfile.name}</span>
-              {/* <span className="text-sm text-gray-600 mb-4">Employee ID: {userProfile.empId}</span>
-              <span className="text-sm text-gray-600">Email: {userProfile.email}</span> */}
+              <div className="flex items-center justify-between mb-4">
+                {/* <span className="text-xl font-semibold text-gray-800">Admin Dashboard</span> */}
+                {/* <div className="bg-purple-100 px-3 py-1 rounded-full">
+                  <span className="text-sm text-purple-700">Admin</span>
+                </div> */}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span className="text-sm text-gray-600">Name:</span>
+                  <span className="ml-2 font-medium">{userProfile.name}</span>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-600">Employee ID:</span>
+                  <span className="ml-2 font-medium">{userProfile.empId}</span>
+                </div>
+                <div>
+                  <span className="text-sm text-gray-600">Email:</span>
+                  <span className="ml-2 font-medium">{userProfile.email}</span>
+                </div>
+                <div className="bg-blue-50 p-2 rounded-md">
+                  <span className="text-sm text-blue-800">Current Shift:</span>
+                  <span className="ml-2 font-medium text-blue-900">{userProfile.shift || 'Not assigned'}</span>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {userProfile.shift === '4' ? 'Shift Hours: 5:30 PM - 2:30 AM' : 'Shift Hours: Not Available'}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -173,6 +220,43 @@ export default function AdminDashboard() {
         <div className="mb-6">
           <AttendanceCard user={userProfile} />
         </div>
+
+        {/* All Users Section */}
+        {/* <div className="mb-6">
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <h2 className="text-lg font-semibold mb-4">All Users & Shifts</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift Hours</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {allUsers.map((user, index) => (
+                    <tr key={user.emp_id || index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.emp_id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {user.shift || 'Not assigned'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.shift === '4' ? '5:30 PM - 2:30 AM' : 'Not Available'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div> */}
 
         {/* Date Range Filter */}
         <div className="date-range-filter mb-6">

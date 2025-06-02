@@ -6,7 +6,8 @@ from app.manager.user_auth_manager import (
     LoginSuccessResponse, TokenData
 )
 from app.utils.jwt_helper import create_access_token, decode_access_token
-from datetime import timedelta
+from datetime import timedelta, datetime
+import pytz
 # import io
 import pandas as pd
 from io import BytesIO
@@ -231,3 +232,99 @@ async def upload_attendance_excel(file: UploadFile = File(...), token: str = Dep
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process Excel file: {str(e)}")
+
+@router.post("/attendance/check-in")
+async def check_in(token: str = Depends(oauth2_scheme)):
+    user = get_current_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    try:
+        # Get current time in IST
+        ist = pytz.timezone('Asia/Kolkata')
+        now = datetime.now(ist)
+        current_date = now.strftime("%Y-%m-%d")
+        current_time = now.strftime("%I:%M %p")
+
+        # Get user details
+        user_details = auth_user_manager.get_user_by_id(user.get("emp_id"))
+        if not user_details:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        result = auth_user_manager.record_check_in(
+            emp_id=user.get("emp_id"),
+            name=user_details.get("name", ""),
+            check_in_time=current_time,
+            date=current_date
+        )
+
+        if isinstance(result, str):
+            raise HTTPException(status_code=400, detail=result)
+
+        return {
+            "message": "Check-in recorded successfully",
+            "data": result
+        }
+    except Exception as e:
+        print(f"Error in check_in endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/attendance/check-out")
+async def check_out(token: str = Depends(oauth2_scheme)):
+    user = get_current_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    try:
+        # Get current time in IST
+        ist = pytz.timezone('Asia/Kolkata')
+        now = datetime.now(ist)
+        current_date = now.strftime("%Y-%m-%d")
+        current_time = now.strftime("%I:%M %p")
+
+        result = auth_user_manager.record_check_out(
+            emp_id=user.get("emp_id"),
+            check_out_time=current_time,
+            date=current_date
+        )
+
+        if isinstance(result, str):
+            raise HTTPException(status_code=400, detail=result)
+
+        return {
+            "message": "Check-out recorded successfully",
+            "data": result
+        }
+    except Exception as e:
+        print(f"Error in check_out endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/attendance/today")
+async def get_today_attendance(token: str = Depends(oauth2_scheme)):
+    user = get_current_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    try:
+        # Get current date in IST
+        ist = pytz.timezone('Asia/Kolkata')
+        current_date = datetime.now(ist).strftime("%Y-%m-%d")
+        
+        attendance = auth_user_manager.get_attendance_by_date(
+            emp_id=user.get("emp_id"),
+            date=current_date
+        )
+
+        if not attendance:
+            return {
+                "message": "No attendance record found for today",
+                "data": None
+            }
+
+        return {
+            "message": "Today's attendance retrieved successfully",
+            "data": attendance
+        }
+    except Exception as e:
+        print(f"Error in get_today_attendance endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

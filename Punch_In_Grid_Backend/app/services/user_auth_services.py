@@ -14,6 +14,7 @@ class AuthUserService:
         self.es = Elasticsearch(settings.elasticsearch_url)
         self.index = settings.index_name
         self.attendance_index = settings.attendance_index
+        self.shifts_index = "shifts"  # Add shifts index name
 
     def hash_password(self, password: str) -> str:
         return pwd_context.hash(password)
@@ -299,3 +300,134 @@ class AuthUserService:
         except Exception as e:
             print(f"Error in fetch_attendance_by_date_range: {str(e)}")
             return []
+
+    def get_user_by_id(self, emp_id: str):
+        query = {
+            "query": {
+                "term": {"emp_id": emp_id}
+            }
+        }
+        resp = self.es.search(index=self.index, body=query)
+        hits = resp['hits']['hits']
+        if hits:
+            return hits[0]['_source']
+        return None
+
+    def get_shift_timings(self, shift_name: str):
+        """Get shift timings from shifts index"""
+        try:
+            query = {
+                "query": {
+                    "term": {
+                        "shift_name.keyword": shift_name
+                    }
+                }
+            }
+            resp = self.es.search(index=self.shifts_index, body=query)
+            hits = resp['hits']['hits']
+            if hits:
+                return hits[0]['_source']
+            
+            # Default shift timings if not found
+            return {
+                "shift_intime": "5:30 PM",
+                "shift_outtime": "2:30 AM"
+            }
+        except Exception as e:
+            print(f"Error fetching shift timings: {str(e)}")
+            # Return default shift timings
+            return {
+                "shift_intime": "5:30 PM",
+                "shift_outtime": "2:30 AM"
+            }
+
+    def record_attendance(self, attendance_record: dict):
+        try:
+            # Check if record already exists
+            query = {
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"term": {"emp_id": attendance_record["emp_id"]}},
+                            {"term": {"date": attendance_record["date"]}}
+                        ]
+                    }
+                }
+            }
+            resp = self.es.search(index=self.attendance_index, body=query)
+            hits = resp['hits']['hits']
+
+            if hits:
+                if hits[0]['_source'].get('intime'):
+                    return "Already checked in for today"
+                # Update existing record
+                doc_id = hits[0]['_id']
+                self.es.update(
+                    index=self.attendance_index,
+                    id=doc_id,
+                    body={"doc": attendance_record}
+                )
+            else:
+                # Create new record
+                doc_id = f"{attendance_record['emp_id']}_{attendance_record['date']}"
+                self.es.index(
+                    index=self.attendance_index,
+                    id=doc_id,
+                    document=attendance_record
+                )
+
+            return attendance_record
+        except Exception as e:
+            print(f"Error in record_attendance: {str(e)}")
+            return str(e)
+
+    def update_attendance(self, emp_id: str, date: str, update_data: dict):
+        try:
+            query = {
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"term": {"emp_id": emp_id}},
+                            {"term": {"date": date}}
+                        ]
+                    }
+                }
+            }
+            resp = self.es.search(index=self.attendance_index, body=query)
+            hits = resp['hits']['hits']
+
+            if not hits:
+                return "No attendance record found"
+
+            doc_id = hits[0]['_id']
+            current_record = hits[0]['_source']
+            current_record.update(update_data)
+
+            self.es.update(
+                index=self.attendance_index,
+                id=doc_id,
+                body={"doc": update_data}
+            )
+
+            return current_record
+        except Exception as e:
+            print(f"Error in update_attendance: {str(e)}")
+            return str(e)
+
+    def get_attendance_by_date(self, emp_id: str, date: str):
+        try:
+            query = {
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"term": {"emp_id": emp_id}},
+                            {"term": {"date": date}}
+                        ]
+                    }
+                }
+            }
+            resp = self.es.search(index=self.attendance_index, body=query)
+            hits = resp['hits']['hits']
+            return hits[0]['_source'] if hits else None
+        except Exception:
+            return None

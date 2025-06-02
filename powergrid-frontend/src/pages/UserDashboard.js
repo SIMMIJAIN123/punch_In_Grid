@@ -4,14 +4,11 @@ import axios from '../api/axiosConfig';
 import { format } from 'date-fns';
 import '../styles/Layout.css';
 import AttendanceCard from '../components/AttendanceCard';
-import moment from 'moment';
 
 export default function UserDashboard() {
   const [stats, setStats] = useState({
-    totalInPunches: 0,
-    missedInPunches: 0,
-    totalOutPunches: 0,
-    missedOutPunches: 0,
+    totalPunches: 0,
+    missedPunches: 0,
     todayPunchIn: '--:--',
     todayPunchOut: '--:--',
     periodOvertime: 0,
@@ -22,16 +19,18 @@ export default function UserDashboard() {
   const [userProfile, setUserProfile] = useState({
     name: '',
     empId: '',
-    email: ''
+    email: '',
+    shift: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const [dateRange, setDateRange] = useState(() => {
-    const currentDate = moment();
+    const currentDate = new Date();
+    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     return {
-      startDate: currentDate.startOf('month').format('YYYY-MM-DD'),
-      endDate: currentDate.endOf('month').format('YYYY-MM-DD')
+      startDate: format(firstDayOfMonth, 'yyyy-MM-dd'),
+      endDate: format(currentDate, 'yyyy-MM-dd')
     };
   });
 
@@ -49,17 +48,16 @@ export default function UserDashboard() {
 
   const fetchUserProfile = async () => {
     try {
-      // const empId = localStorage.getItem('empId');
-      // const email = localStorage.getItem('email');
-      // const name = localStorage.getItem('name');
       const name = localStorage.getItem('name') || 'N/A';
       const empId = localStorage.getItem('empId') || 'N/A';
       const email = localStorage.getItem('email') || 'N/A';
+      const shift = localStorage.getItem('shift') || '4'; // Default to shift 4 if not set
       
       setUserProfile({
         name: name || '',
         empId: empId || '',
-        email: email || ''
+        email: email || '',
+        shift: shift || ''
       });
     } catch (err) {
       console.error('Error setting user profile:', err);
@@ -166,18 +164,10 @@ export default function UserDashboard() {
 
   const handleDateChange = (e) => {
     const { name, value } = e.target;
-    setDateRange(prev => ({
-      ...prev,
+    setDateRange(prevRange => ({
+      ...prevRange,
       [name]: value
     }));
-  };
-
-  const setCurrentMonth = () => {
-    const currentDate = moment();
-    setDateRange({
-      startDate: currentDate.startOf('month').format('YYYY-MM-DD'),
-      endDate: currentDate.endOf('month').format('YYYY-MM-DD')
-    });
   };
 
   return (
@@ -185,9 +175,17 @@ export default function UserDashboard() {
       <div className="max-w-7xl mx-auto">
         {/* Profile Section */}
         <div className="mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-4 inline-block">
+          <div className="bg-white rounded-lg shadow-sm p-4">
             <div className="flex flex-col">
               <span className="text-xl font-semibold text-gray-800 mb-1">Name: {userProfile.name}</span>
+              <span className="text-sm text-gray-600">Employee ID: {userProfile.empId}</span>
+              <span className="text-sm text-gray-600">Email: {userProfile.email}</span>
+              <div className="mt-2 p-2 bg-blue-50 rounded-md">
+                <span className="text-sm font-medium text-blue-800">Current Shift: {userProfile.shift}</span>
+                <p className="text-xs text-blue-600 mt-1">
+                  {userProfile.shift === '4' ? 'Shift Hours: 5:30 PM - 2:30 AM' : 'Shift Hours: Not Available'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -199,39 +197,33 @@ export default function UserDashboard() {
 
         {/* Date Range Filter */}
         <div className="date-range-filter mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex gap-4 items-end">
-              <div className="filter-group">
-                <label htmlFor="startDate">Start Date:</label>
-                <input
-                  type="date"
-                  id="startDate"
-                  name="startDate"
-                  value={dateRange.startDate}
-                  onChange={handleDateChange}
-                  max={dateRange.endDate}
-                  className="date-input"
-                />
-              </div>
-              <div className="filter-group">
-                <label htmlFor="endDate">End Date:</label>
-                <input
-                  type="date"
-                  id="endDate"
-                  name="endDate"
-                  value={dateRange.endDate}
-                  onChange={handleDateChange}
-                  min={dateRange.startDate}
-                  max={moment().format('YYYY-MM-DD')}
-                  className="date-input"
-                />
-              </div>
-              <button
-                onClick={setCurrentMonth}
-                className="current-month-btn"
-              >
-                Current Month
-              </button>
+          
+          <h3 className="text-lg font-semibold mb-4">Select Date Range</h3>
+          <div className="flex gap-4 items-center">
+            <div className="filter-group">
+              <label htmlFor="startDate">Start Date:</label>
+              <input
+                type="date"
+                id="startDate"
+                name="startDate"
+                value={dateRange.startDate}
+                onChange={handleDateChange}
+                max={dateRange.endDate}
+                className="date-input"
+              />
+            </div>
+            <div className="filter-group">
+              <label htmlFor="endDate">End Date:</label>
+              <input
+                type="date"
+                id="endDate"
+                name="endDate"
+                value={dateRange.endDate}
+                onChange={handleDateChange}
+                min={dateRange.startDate}
+                max={format(new Date(), 'yyyy-MM-dd')}
+                className="date-input"
+              />
             </div>
           </div>
         </div>
@@ -243,6 +235,7 @@ export default function UserDashboard() {
         <div className="mb-8">
           <h4 className="text-lg font-semibold mb-4">
             My Attendance 
+            {/* ({dateRange.startDate} to {dateRange.endDate}) */}
             </h4>
           <div className="attendance-cards">
             <div className="attendance-card">
@@ -318,51 +311,6 @@ export default function UserDashboard() {
             </div>
           </div>
         </div>
-
-        <style jsx>{`
-          .date-input {
-            padding: 0.5rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            color: #4a5568;
-            background-color: white;
-            min-width: 150px;
-          }
-
-          .date-input:focus {
-            outline: none;
-            border-color: #4299e1;
-            box-shadow: 0 0 0 1px #4299e1;
-          }
-
-          .current-month-btn {
-            padding: 0.5rem 1rem;
-            background-color: #4299e1;
-            color: white;
-            border: none;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-          }
-
-          .current-month-btn:hover {
-            background-color: #3182ce;
-          }
-
-          .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-          }
-
-          .filter-group label {
-            font-size: 0.875rem;
-            color: #4a5568;
-            font-weight: 500;
-          }
-        `}</style>
       </div>
     </div>
   );

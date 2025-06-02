@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../api/axiosConfig';
+import React from 'react';
 
 export default function UpdateUserEmail() {
   const [empId, setEmpId] = useState('');

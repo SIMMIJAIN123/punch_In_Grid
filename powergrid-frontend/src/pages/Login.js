@@ -37,6 +37,7 @@ export default function Login() {
       localStorage.setItem('email', data.email);
       localStorage.setItem('name', data.name);
       localStorage.setItem('isActive', data.is_active);
+      localStorage.setItem('shift', data.shift || '4');
   
       // Redirect based on role
       if (data.role === 'admin') {

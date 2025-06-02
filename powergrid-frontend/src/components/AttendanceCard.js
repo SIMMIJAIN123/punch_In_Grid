@@ -230,6 +230,90 @@ const AttendanceCard = ({ user }) => {
         return years;
     };
 
+    const renderAttendanceStatus = () => {
+        if (!attendanceData) {
+            return (
+                <div className="text-center p-4">
+                    <h3 className="text-lg font-semibold mb-4">Today's Attendance</h3>
+                    <p>No attendance record for today</p>
+                    <button
+                        onClick={handleCheckIn}
+                        disabled={loading}
+                        className="bg-green-500 text-white px-6 py-2 rounded-lg mt-4 hover:bg-green-600 disabled:opacity-50"
+                    >
+                        Check In
+                    </button>
+                </div>
+            );
+        }
+
+        return (
+            <div className="text-center p-4">
+                <h3 className="text-lg font-semibold mb-4">Today's Attendance</h3>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <p className="font-medium">Check In Time</p>
+                        <p>{attendanceData.intime || 'Not checked in'}</p>
+                        <p className="text-xs text-gray-500">Expected: {attendanceData.shift_intime || '--:--'}</p>
+                    </div>
+                    <div>
+                        <p className="font-medium">Check Out Time</p>
+                        <p>{attendanceData.outtime || 'Not checked out'}</p>
+                        <p className="text-xs text-gray-500">Expected: {attendanceData.shift_outtime || '--:--'}</p>
+                    </div>
+                </div>
+                <div className="mb-4 p-2 bg-gray-50 rounded-md">
+                    <p className="font-medium text-gray-700">Current Shift</p>
+                    <p className="text-gray-600">{user.shift || attendanceData.shift || 'Not assigned'}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                        {user.shift === '4' ? 'Hours: 5:30 PM - 2:30 AM' : 'Hours: Not Available'}
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                    <div className={`p-2 rounded-md ${attendanceData.late_in > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+                        <p className="text-sm font-medium">Late In</p>
+                        <p className={`text-sm ${attendanceData.late_in > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            {attendanceData.late_in ? `${attendanceData.late_in} mins` : '0 mins'}
+                        </p>
+                    </div>
+                    <div className={`p-2 rounded-md ${attendanceData.early_out > 0 ? 'bg-yellow-50' : 'bg-green-50'}`}>
+                        <p className="text-sm font-medium">Early Out</p>
+                        <p className={`text-sm ${attendanceData.early_out > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                            {attendanceData.early_out ? `${attendanceData.early_out} mins` : '0 mins'}
+                        </p>
+                    </div>
+                    <div className={`p-2 rounded-md ${attendanceData.overtime > 0 ? 'bg-blue-50' : 'bg-gray-50'}`}>
+                        <p className="text-sm font-medium">Overtime</p>
+                        <p className={`text-sm ${attendanceData.overtime > 0 ? 'text-blue-600' : 'text-gray-600'}`}>
+                            {attendanceData.overtime ? `${attendanceData.overtime} mins` : '0 mins'}
+                        </p>
+                    </div>
+                </div>
+
+                {!attendanceData.intime ? (
+                    <button
+                        onClick={handleCheckIn}
+                        disabled={loading}
+                        className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 disabled:opacity-50"
+                    >
+                        Check In
+                    </button>
+                ) : !attendanceData.outtime ? (
+                    <button
+                        onClick={handleCheckOut}
+                        disabled={loading}
+                        className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 disabled:opacity-50"
+                    >
+                        Check Out
+                    </button>
+                ) : (
+                    <p className="text-green-600 font-medium">Shift Complete</p>
+                )}
+            </div>
+        );
+    };
+
     return (
         <div className="attendance-cards-container">
             <div className="attendance-card today-card">
@@ -237,66 +321,12 @@ const AttendanceCard = ({ user }) => {
                     <div className="header-content">
                         <div className="card-title">Today's Check In/Out</div>
                         <div className="date-selectors">
-                            <select 
-                                className="date-selector"
-                                value={selectedMonth}
-                                onChange={(e) => setSelectedMonth(e.target.value)}
-                            >
-                                {months.map(month => (
-                                    <option key={month.value} value={month.value}>
-                                        {month.label}
-                                    </option>
-                                ))}
-                            </select>
-                            <select 
-                                className="date-selector"
-                                value={selectedYear}
-                                onChange={(e) => setSelectedYear(e.target.value)}
-                            >
-                                {getYearOptions().map(year => (
-                                    <option key={year.value} value={year.value}>
-                                        {year.label}
-                                    </option>
-                                ))}
-                            </select>
                         </div>
                     </div>
                 </div>
                 
                 <div className="card-content">
-                    <div className="time-section">
-                        <div className="time-item">
-                            <div className="time-label">Check In</div>
-                            <div className="time-value">{attendanceData?.intime || '--:--'}</div>
-                        </div>
-                        <div className="time-item">
-                            <div className="time-label">Check Out</div>
-                            <div className="time-value">{attendanceData?.outtime || '--:--'}</div>
-                        </div>
-                    </div>
-
-                    <div className="button-container">
-                        <button
-                            className={`action-button ${attendanceData?.intime ? 'disabled' : ''}`}
-                            onClick={handleCheckIn}
-                            disabled={loading || attendanceData?.intime}
-                        >
-                            {loading ? 'Processing...' : 'Check In'}
-                        </button>
-                        <button
-                            className={`action-button ${!attendanceData?.intime || attendanceData?.outtime ? 'disabled' : ''}`}
-                            onClick={handleCheckOut}
-                            disabled={loading || !attendanceData?.intime || attendanceData?.outtime}
-                        >
-                            {loading ? 'Processing...' : 'Check Out'}
-                        </button>
-                    </div>
-
-                    {message.text && (
-                        <div className={`message ${message.type}`}>
-                            {message.text}
-                        </div>
-                    )}
+                    {renderAttendanceStatus()}
 
                     <div className="stats-container">
                         <div className="stat-item">
@@ -318,33 +348,6 @@ const AttendanceCard = ({ user }) => {
                     </div>
                 </div>
             </div>
-
-            {/* Monthly Statistics Card */}
-            {/* <div className="attendance-card monthly-card">
-                <div className="card-title">This Month's Statistics</div>
-                <div className="card-content">
-                    <div className="stat-item">
-                        <span className="stat-label">Total Working Days</span>
-                        <span className="stat-value">{monthlyStats.totalDays}</span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-label">Present Days</span>
-                        <span className="stat-value">{monthlyStats.presentDays}</span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-label">Late Ins</span>
-                        <span className="stat-value">{monthlyStats.lateIns}</span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-label">Early Outs</span>
-                        <span className="stat-value">{monthlyStats.earlyOuts}</span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-label">Total Overtime</span>
-                        <span className="stat-value">{monthlyStats.overtime} mins</span>
-                    </div>
-                </div>
-            </div> */}
 
             <style jsx>{`
                 .attendance-cards-container {
