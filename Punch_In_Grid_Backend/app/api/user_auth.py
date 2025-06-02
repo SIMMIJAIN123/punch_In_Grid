@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from app.manager.user_auth_manager import SetPasswordRequest
 from app.manager.user_auth_manager import (
     auth_user_manager, RegisterRequest, LoginRequest, UserResponse, 
-    LoginSuccessResponse, TokenData
+    LoginSuccessResponse, TokenData, ShiftRequest
 )
 from app.utils.jwt_helper import create_access_token, decode_access_token
 from datetime import timedelta, datetime
@@ -328,3 +328,75 @@ async def get_today_attendance(token: str = Depends(oauth2_scheme)):
     except Exception as e:
         print(f"Error in get_today_attendance endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Shift Management Endpoints
+@router.post("/shifts")
+async def create_shift(shift_data: ShiftRequest, token: str = Depends(oauth2_scheme)):
+    user = get_current_user(token)
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    result, error = auth_user_manager.create_shift(shift_data)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return result
+
+@router.get("/shifts/{shift_name}")
+async def get_shift(shift_name: str, token: str = Depends(oauth2_scheme)):
+    user = get_current_user(token)
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    result, error = auth_user_manager.get_shift(shift_name)
+    if error:
+        raise HTTPException(status_code=404, detail=error)
+    
+    return {
+        "message": "Shift retrieved successfully",
+        "data": result
+    }
+
+@router.put("/shifts/{shift_name}")
+async def update_shift(shift_name: str, shift_data: ShiftRequest, token: str = Depends(oauth2_scheme)):
+    user = get_current_user(token)
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    result, error = auth_user_manager.update_shift(shift_name, shift_data.dict())
+    if error:
+        raise HTTPException(status_code=404 if "not found" in error else 400, detail=error)
+    
+    return {
+        "message": "Shift updated successfully",
+        "data": result
+    }
+
+@router.delete("/shifts/{shift_name}")
+async def delete_shift(shift_name: str, token: str = Depends(oauth2_scheme)):
+    user = get_current_user(token)
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    result, error = auth_user_manager.delete_shift(shift_name)
+    if error:
+        raise HTTPException(status_code=404, detail=error)
+    
+    return {
+        "message": "Shift deleted successfully",
+        "data": result
+    }
+
+@router.get("/shifts")
+async def list_shifts(token: str = Depends(oauth2_scheme)):
+    user = get_current_user(token)
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    result, error = auth_user_manager.list_shifts()
+    if error:
+        raise HTTPException(status_code=500, detail=str(error))
+    
+    return {
+        "message": "Shifts retrieved successfully",
+        "data": result if result else []
+    }

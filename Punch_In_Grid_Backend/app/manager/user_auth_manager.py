@@ -4,7 +4,8 @@ import pandas as pd
 from app.services.user_auth_services import AuthUserService
 from app.models.user_auth_models import (
     RegisterRequest, LoginRequest, SetPasswordRequest,
-    UserResponse, LoginSuccessResponse, TokenData
+    UserResponse, LoginSuccessResponse, TokenData,
+    ShiftRequest, ShiftResponse, ShiftListResponse
 )
 from datetime import datetime
 import pytz
@@ -29,7 +30,6 @@ class AuthUserManager:
         if user.get("role") != "admin" and user.get("is_active") == "false":
             return None, "First you need to set your password"
         
-
         if not self.service.verify_password(login_req.password, user["password"]):
             return None, "Invalid email or password"
         
@@ -69,6 +69,72 @@ class AuthUserManager:
 
     def get_user_by_id(self, emp_id: str):
         return self.service.get_user_by_id(emp_id)
+
+    # Shift Management Methods
+    def create_shift(self, shift_data: ShiftRequest):
+        """Create a new shift"""
+        try:
+            shift = shift_data.dict()
+            result = self.service.create_shift(shift)
+            if isinstance(result, str):
+                return None, result
+            return {
+                "message": "Shift created successfully",
+                "data": result
+            }, None
+        except Exception as e:
+            return None, str(e)
+
+    def get_shift(self, shift_name: str):
+        """Get a shift by name"""
+        try:
+            shift = self.service.get_shift_by_name(shift_name)
+            if not shift:
+                return None, "Shift not found"
+            return {
+                "message": "Shift retrieved successfully",
+                "data": shift
+            }, None
+        except Exception as e:
+            return None, str(e)
+
+    def update_shift(self, shift_name: str, shift_data: ShiftRequest):
+        """Update an existing shift"""
+        try:
+            updated_data = shift_data.dict()
+            result = self.service.update_shift(shift_name, updated_data)
+            if isinstance(result, str):
+                return None, result
+            return {
+                "message": "Shift updated successfully",
+                "data": result
+            }, None
+        except Exception as e:
+            return None, str(e)
+
+    def delete_shift(self, shift_name: str):
+        """Delete a shift"""
+        try:
+            result = self.service.delete_shift(shift_name)
+            if isinstance(result, str):
+                return None, result
+            return {
+                "message": "Shift deleted successfully",
+                "data": {"shift_name": shift_name}
+            }, None
+        except Exception as e:
+            return None, str(e)
+
+    def list_shifts(self):
+        """List all shifts"""
+        try:
+            shifts = self.service.get_all_shifts()
+            return {
+                "message": "Shifts retrieved successfully",
+                "data": shifts
+            }, None
+        except Exception as e:
+            return None, str(e)
 
     def _convert_to_ist(self, time_str):
         """Convert time string to IST datetime"""

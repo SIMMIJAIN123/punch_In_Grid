@@ -14,7 +14,25 @@ class AuthUserService:
         self.es = Elasticsearch(settings.elasticsearch_url)
         self.index = settings.index_name
         self.attendance_index = settings.attendance_index
-        self.shifts_index = "shifts"  # Add shifts index name
+        self.shifts_index = "shifts"  # Index for shifts
+        self._ensure_shifts_index()
+
+    def _ensure_shifts_index(self):
+        """Ensure shifts index exists with proper mapping"""
+        try:
+            if not self.es.indices.exists(index=self.shifts_index):
+                mappings = {
+                    "mappings": {
+                        "properties": {
+                            "shift_name": {"type": "keyword"},
+                            "shift_intime": {"type": "keyword"},
+                            "shift_outtime": {"type": "keyword"}
+                        }
+                    }
+                }
+                self.es.indices.create(index=self.shifts_index, body=mappings)
+        except Exception as e:
+            print(f"Error ensuring shifts index: {str(e)}")
 
     def hash_password(self, password: str) -> str:
         return pwd_context.hash(password)
@@ -431,3 +449,152 @@ class AuthUserService:
             return hits[0]['_source'] if hits else None
         except Exception:
             return None
+
+    # Shift Management Methods
+    def create_shift(self, shift_data: dict):
+        """Create a new shift"""
+        try:
+            # Check if shift with same name already exists
+            try:
+                self.es.get(index=self.shifts_index, id=shift_data["shift_name"])
+                return None, f"Shift with name '{shift_data['shift_name']}' already exists"
+            except Exception:
+                pass  # Shift doesn't exist, continue with creation
+
+            # Insert the new shift
+            result = self.es.index(
+                index=self.shifts_index,
+                id=shift_data["shift_name"],
+                document=shift_data,
+                refresh=True
+            )
+            if result['result'] == 'created':
+                return shift_data, None
+            return None, "Failed to create shift"
+        except Exception as e:
+            return None, str(e)
+
+    def get_shift_by_name(self, shift_name: str):
+        """Get a shift by name"""
+        try:
+            if not self.es.indices.exists(index=self.shifts_index):
+                return None, "No shifts exist yet"
+
+            try:
+                result = self.es.get(index=self.shifts_index, id=shift_name)
+                return result['_source'], None
+            except Exception:
+                return None, "Shift not found"
+        except Exception as e:
+            return None, str(e)
+
+    def update_shift(self, shift_name: str, shift_data: dict):
+        """Update an existing shift"""
+        try:
+            if not self.es.indices.exists(index=self.shifts_index):
+                return None, "No shifts exist yet"
+
+            # Check if shift exists
+            try:
+                self.es.get(index=self.shifts_index, id=shift_name)
+            except Exception:
+                return None, f"Shift '{shift_name}' not found"
+
+            # Update the shift
+            try:
+                result = self.es.index(
+                    index=self.shifts_index,
+                    id=shift_name,
+                    document=shift_data,
+                    refresh=True
+                )
+                if result['result'] in ['updated', 'created']:
+                    return shift_data, None
+                return None, "Failed to update shift"
+            except Exception as e:
+                return None, f"Error updating shift: {str(e)}"
+        except Exception as e:
+            return None, str(e)
+
+    def delete_shift(self, shift_name: str):
+        """Delete a shift"""
+        try:
+            if not self.es.indices.exists(index=self.shifts_index):
+                return None, "No shifts exist yet"
+
+            # First check if shift exists
+            try:
+                self.es.get(index=self.shifts_index, id=shift_name)
+            except Exception:
+                return None, f"Shift '{shift_name}' not found"
+
+            # Delete the shift
+            try:
+                self.es.delete(index=self.shifts_index, id=shift_name, refresh=True)
+                # Verify deletion
+                try:
+                    self.es.get(index=self.shifts_index, id=shift_name)
+                    return None, "Failed to delete shift"
+                except Exception:
+                    # If get fails after delete, it means deletion was successful
+                    return {"shift_name": shift_name}, None
+            except Exception:
+                return None, "Failed to delete shift"
+        except Exception as e:
+            return None, str(e)
+
+    def get_all_shifts(self):
+        """Get all shifts"""
+        try:
+            if not self.es.indices.exists(index=self.shifts_index):
+                return [], None
+
+            query = {
+                "query": {
+                    "match_all": {}
+                },
+                "sort": [
+                    {"shift_name": {"order": "asc"}}
+                ]
+            }
+            resp = self.es.search(index=self.shifts_index, body=query, size=100)
+            shifts = [hit['_source'] for hit in resp['hits']['hits']]
+            return shifts, None
+        except Exception as e:
+            return None, str(e)
+
+    def get_shift_timings(self, shift_name: str):
+        """Get shift timings"""
+        try:
+            if not self.es.indices.exists(index=self.shifts_index):
+                return {
+                    "shift_intime": "09:00 AM",
+                    "shift_outtime": "06:00 PM"
+                }
+
+            query = {
+                "query": {
+                    "term": {
+                        "shift_name.keyword": shift_name
+                    }
+                }
+            }
+            resp = self.es.search(index=self.shifts_index, body=query)
+            hits = resp['hits']['hits']
+            if hits:
+                shift = hits[0]['_source']
+                return {
+                    "shift_intime": shift["shift_intime"],
+                    "shift_outtime": shift["shift_outtime"]
+                }
+            # Return default shift timings if not found
+            return {
+                "shift_intime": "09:00 AM",
+                "shift_outtime": "06:00 PM"
+            }
+        except Exception:
+            # Return default shift timings on error
+            return {
+                "shift_intime": "09:00 AM",
+                "shift_outtime": "06:00 PM"
+            }
