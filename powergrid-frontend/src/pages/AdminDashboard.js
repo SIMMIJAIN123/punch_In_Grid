@@ -25,15 +25,20 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
-  const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+  const [dateRange, setDateRange] = useState(() => {
+    const currentDate = moment();
+    return {
+      startDate: currentDate.startOf('month').format('YYYY-MM-DD'),
+      endDate: currentDate.endOf('month').format('YYYY-MM-DD')
+    };
+  });
 
   useEffect(() => {
-    if (selectedMonth && selectedYear) {
+    if (dateRange.startDate && dateRange.endDate) {
       fetchAdminAttendance();
       fetchUserProfile();
     }
-  }, [selectedMonth, selectedYear]);
+  }, [dateRange]);
 
   const fetchUserProfile = async () => {
     try {
@@ -63,13 +68,10 @@ export default function AdminDashboard() {
       setError('');
       const empId = localStorage.getItem('empId');
 
-      const startDate = moment(`${selectedYear}-${selectedMonth}-01`).startOf('month').format('YYYY-MM-DD');
-      const endDate = moment(`${selectedYear}-${selectedMonth}-01`).endOf('month').format('YYYY-MM-DD');
-
       const response = await axios.get('/service-auth-powerGrid/v1/endpoint/attendance_data/filter', {
         params: {
-          start_date: startDate,
-          end_date: endDate,
+          start_date: dateRange.startDate,
+          end_date: dateRange.endDate,
           employee_id: empId
         }
       });
@@ -79,7 +81,7 @@ export default function AdminDashboard() {
         
         // Get today's data if within range
         const today = format(new Date(), 'yyyy-MM-dd');
-        const todayData = today >= startDate && today <= endDate ? 
+        const todayData = today >= dateRange.startDate && today <= dateRange.endDate ? 
           periodData.find(record => record.date === today) || {} : 
           {};
 
@@ -137,31 +139,20 @@ export default function AdminDashboard() {
     }
   };
 
-  // Array of months
-  const months = [
-    { value: '01', label: 'January' },
-    { value: '02', label: 'February' },
-    { value: '03', label: 'March' },
-    { value: '04', label: 'April' },
-    { value: '05', label: 'May' },
-    { value: '06', label: 'June' },
-    { value: '07', label: 'July' },
-    { value: '08', label: 'August' },
-    { value: '09', label: 'September' },
-    { value: '10', label: 'October' },
-    { value: '11', label: 'November' },
-    { value: '12', label: 'December' }
-  ];
+  const handleDateChange = (e) => {
+    const { name, value } = e.target;
+    setDateRange(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-  // Get array of years (last 5 years to current year)
-  const getYearOptions = () => {
-    const years = [];
-    const currentYear = moment().year();
-    for (let i = 0; i < 5; i++) {
-      const year = currentYear - i;
-      years.push({ value: year.toString(), label: year.toString() });
-    }
-    return years;
+  const setCurrentMonth = () => {
+    const currentDate = moment();
+    setDateRange({
+      startDate: currentDate.startOf('month').format('YYYY-MM-DD'),
+      endDate: currentDate.endOf('month').format('YYYY-MM-DD')
+    });
   };
 
   return (
@@ -183,36 +174,41 @@ export default function AdminDashboard() {
           <AttendanceCard user={userProfile} />
         </div>
 
-        {/* Month and Year Filter */}
-        <div className="date-range-filter mb-6 flex justify-end">
-          <div className="flex gap-4 items-center">
-            <div className="filter-group">
-              <label>Select Month:</label>
-              <select
-                className="date-selector"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
+        {/* Date Range Filter */}
+        <div className="date-range-filter mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-4 items-end">
+              <div className="filter-group">
+                <label htmlFor="startDate">Start Date:</label>
+                <input
+                  type="date"
+                  id="startDate"
+                  name="startDate"
+                  value={dateRange.startDate}
+                  onChange={handleDateChange}
+                  max={dateRange.endDate}
+                  className="date-input"
+                />
+              </div>
+              <div className="filter-group">
+                <label htmlFor="endDate">End Date:</label>
+                <input
+                  type="date"
+                  id="endDate"
+                  name="endDate"
+                  value={dateRange.endDate}
+                  onChange={handleDateChange}
+                  min={dateRange.startDate}
+                  max={moment().format('YYYY-MM-DD')}
+                  className="date-input"
+                />
+              </div>
+              <button
+                onClick={setCurrentMonth}
+                className="current-month-btn"
               >
-                {months.map(month => (
-                  <option key={month.value} value={month.value}>
-                    {month.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="filter-group">
-              <label>Select Year:</label>
-              <select
-                className="date-selector"
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-              >
-                {getYearOptions().map(year => (
-                  <option key={year.value} value={year.value}>
-                    {year.label}
-                  </option>
-                ))}
-              </select>
+                Current Month
+              </button>
             </div>
           </div>
         </div>
@@ -299,6 +295,51 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+
+        <style jsx>{`
+          .date-input {
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            color: #4a5568;
+            background-color: white;
+            min-width: 150px;
+          }
+
+          .date-input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 1px #4299e1;
+          }
+
+          .current-month-btn {
+            padding: 0.5rem 1rem;
+            background-color: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+          }
+
+          .current-month-btn:hover {
+            background-color: #3182ce;
+          }
+
+          .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+
+          .filter-group label {
+            font-size: 0.875rem;
+            color: #4a5568;
+            font-weight: 500;
+          }
+        `}</style>
       </div>
     </div>
   );
