@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from app.api import user_auth
+from app.api import user_auth, attendance
 
 class CORSMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -29,6 +29,7 @@ app.add_middleware(CORSMiddleware)
 
 # Include routers
 app.include_router(user_auth.router)
+app.include_router(attendance.router)
 
 # Custom OpenAPI for Swagger UI Bearer Auth support
 from fastapi.openapi.utils import get_openapi

@@ -9,6 +9,7 @@ const AttendanceCard = ({ user }) => {
     const [message, setMessage] = useState({ text: '', type: '' });
     const [selectedMonth, setSelectedMonth] = useState(moment().format('MM'));
     const [selectedYear, setSelectedYear] = useState(moment().format('YYYY'));
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     const fetchTodayAttendance = async () => {
         try {
@@ -18,22 +19,25 @@ const AttendanceCard = ({ user }) => {
                 return;
             }
 
-            console.log('Fetching attendance for user:', user);
-            const response = await axios.get(`/api/attendance/today/${user.empId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            console.log('Today attendance data received:', response.data);
-            setAttendanceData(response.data);
+            if (user?.empId) {
+                console.log('Fetching attendance for user:', user);
+                const response = await axios.get(`/api/attendance/today/${user.empId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                console.log('Today attendance data received:', response.data);
+                setAttendanceData(response.data);
+            }
         } catch (error) {
             console.error('Error fetching attendance:', error.response || error);
             if (error.response?.status === 404) {
-                // If no attendance found, that's okay - just set to null
                 setAttendanceData(null);
                 return;
             }
             showMessage(error.response?.data?.message || 'Failed to fetch attendance data', 'error');
+        } finally {
+            setIsInitialLoad(false);
         }
     };
 
@@ -63,14 +67,20 @@ const AttendanceCard = ({ user }) => {
     };
 
     useEffect(() => {
-        if (user?.empId) {
-            fetchTodayAttendance();
-            fetchMonthlyData();
-            const interval = setInterval(fetchTodayAttendance, 60000);
-            return () => clearInterval(interval);
-        } else {
-            console.warn('No user ID available:', user);
+        // Only proceed if we have a valid user with empId
+        if (!user || !user.empId) {
+            return; // Silently return if no user data yet
         }
+
+        // Initial data fetch
+        fetchTodayAttendance();
+        fetchMonthlyData();
+
+        // Set up polling interval
+        const interval = setInterval(fetchTodayAttendance, 60000);
+
+        // Cleanup function
+        return () => clearInterval(interval);
     }, [user?.empId, selectedMonth, selectedYear]);
 
     const showMessage = (text, type) => {
@@ -231,6 +241,15 @@ const AttendanceCard = ({ user }) => {
     };
 
     const renderAttendanceStatus = () => {
+        if (isInitialLoad) {
+            return (
+                <div className="text-center p-4">
+                    <h3 className="text-lg font-semibold mb-4">Today's Attendance</h3>
+                    <p>Loading attendance data...</p>
+                </div>
+            );
+        }
+
         if (!attendanceData) {
             return (
                 <div className="text-center p-4">
@@ -349,7 +368,7 @@ const AttendanceCard = ({ user }) => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 .attendance-cards-container {
                     display: flex;
                     gap: 1rem;
