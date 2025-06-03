@@ -49,7 +49,6 @@ export default function AdminDashboard() {
       const name = localStorage.getItem('name');
       const shift = localStorage.getItem('shift');
 
-      
       setUserProfile({
         name: name || '',
         empId: empId || '',
@@ -63,8 +62,16 @@ export default function AdminDashboard() {
 
   const convertTimeToMinutes = (timeStr) => {
     if (!timeStr || timeStr === '--:--' || timeStr === '00:00') return 0;
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return (hours * 60) + minutes;
+    
+    // Handle HH:mm format
+    if (timeStr.includes(':')) {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      return (hours * 60) + minutes;
+    }
+    
+    // If it's just minutes as a string
+    const mins = parseInt(timeStr);
+    return isNaN(mins) ? 0 : mins;
   };
 
   const fetchAdminAttendance = async () => {
@@ -84,13 +91,11 @@ export default function AdminDashboard() {
       if (response.data?.data) {
         const periodData = response.data.data;
         
-        // Get today's data if within range
-        const today = format(new Date(), 'yyyy-MM-dd');
-        const todayData = today >= dateRange.startDate && today <= dateRange.endDate ? 
-          periodData.find(record => record.date === today) || {} : 
-          {};
+        // Get today's data
+        const today = moment().format('YYYY-MM-DD');
+        const todayData = periodData.find(record => record.date === today) || {};
 
-        // Calculate in-time and out-time statistics
+        // Calculate in-time and out-time statistics for the period
         const totalInPunches = periodData.filter(record => 
           record.intime && record.intime !== '--:--'
         ).length;
@@ -107,21 +112,21 @@ export default function AdminDashboard() {
           !record.outtime || record.outtime === '--:--'
         ).length;
 
-        // Calculate overtime
+        // Calculate overtime for the period
         const periodOvertime = periodData.reduce((sum, record) => {
-          if (record.overtime && record.overtime !== '--:--') {
-            return sum + convertTimeToMinutes(record.overtime);
-          }
-          return sum;
+          const overtimeMinutes = convertTimeToMinutes(record.overtime);
+          return sum + overtimeMinutes;
         }, 0);
 
-        // Calculate late arrivals
+        // Calculate late arrivals for the period
         const periodLate = periodData.reduce((sum, record) => {
-          if (record.late_in && record.late_in !== '--:--') {
-            return sum + convertTimeToMinutes(record.late_in);
-          }
-          return sum;
+          const lateMinutes = convertTimeToMinutes(record.late_in);
+          return sum + lateMinutes;
         }, 0);
+
+        // Calculate today's metrics
+        const todayOvertime = convertTimeToMinutes(todayData.overtime);
+        const todayLate = convertTimeToMinutes(todayData.late_in);
 
         setAdminStats({
           totalInPunches,
@@ -131,9 +136,9 @@ export default function AdminDashboard() {
           todayPunchIn: todayData.intime || '--:--',
           todayPunchOut: todayData.outtime || '--:--',
           periodOvertime,
-          todayOvertime: todayData.overtime ? convertTimeToMinutes(todayData.overtime) : 0,
+          todayOvertime,
           periodLate,
-          todayLate: todayData.late_in ? convertTimeToMinutes(todayData.late_in) : 0
+          todayLate
         });
       }
     } catch (err) {
@@ -328,7 +333,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             
-            {/* <div className="attendance-card">
+            <div className="attendance-card">
               <div className="card-title">Today's Status</div>
               <div className="card-content">
                 <div className="stat-item">
@@ -339,8 +344,12 @@ export default function AdminDashboard() {
                   <span className="stat-label">Punch Out</span>
                   <span className="stat-value">{adminStats.todayPunchOut}</span>
                 </div>
+                {/* <div className="stat-item">
+                  <span className="stat-label">Early Out</span>
+                  <span className="stat-value">{adminStats.early_out}</span>
+                </div> */}
               </div>
-            </div> */}
+            </div>
             
             <div className="attendance-card">
               <div className="card-title">Overtime</div>

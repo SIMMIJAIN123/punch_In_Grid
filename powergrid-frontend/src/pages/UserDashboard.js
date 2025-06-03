@@ -4,11 +4,14 @@ import axios from '../api/axiosConfig';
 import { format } from 'date-fns';
 import '../styles/Layout.css';
 import AttendanceCard from '../components/AttendanceCard';
+import moment from 'moment';
 
 export default function UserDashboard() {
   const [stats, setStats] = useState({
-    totalPunches: 0,
-    missedPunches: 0,
+    totalInPunches: 0,
+    missedInPunches: 0,
+    totalOutPunches: 0,
+    missedOutPunches: 0,
     todayPunchIn: '--:--',
     todayPunchOut: '--:--',
     periodOvertime: 0,
@@ -26,11 +29,10 @@ export default function UserDashboard() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const [dateRange, setDateRange] = useState(() => {
-    const currentDate = new Date();
-    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const currentDate = moment();
     return {
-      startDate: format(firstDayOfMonth, 'yyyy-MM-dd'),
-      endDate: format(currentDate, 'yyyy-MM-dd')
+      startDate: currentDate.startOf('month').format('YYYY-MM-DD'),
+      endDate: currentDate.format('YYYY-MM-DD')
     };
   });
 
@@ -66,8 +68,16 @@ export default function UserDashboard() {
 
   const convertTimeToMinutes = (timeStr) => {
     if (!timeStr || timeStr === '--:--' || timeStr === '00:00') return 0;
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return (hours * 60) + minutes;
+    
+    // Handle HH:mm format
+    if (timeStr.includes(':')) {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      return (hours * 60) + minutes;
+    }
+    
+    // If it's just minutes as a string
+    const mins = parseInt(timeStr);
+    return isNaN(mins) ? 0 : mins;
   };
 
   const fetchAttendanceStats = async () => {
@@ -95,13 +105,11 @@ export default function UserDashboard() {
       if (response.data?.data) {
         const periodData = response.data.data;
         
-        // Get today's data if within range
-        const today = format(new Date(), 'yyyy-MM-dd');
-        const todayData = today >= dateRange.startDate && today <= dateRange.endDate ? 
-          periodData.find(record => record.date === today) || {} : 
-          {};
+        // Get today's data
+        const today = moment().format('YYYY-MM-DD');
+        const todayData = periodData.find(record => record.date === today) || {};
 
-        // Calculate in-time and out-time statistics
+        // Calculate in-time and out-time statistics for the period
         const totalInPunches = periodData.filter(record => 
           record.intime && record.intime !== '--:--'
         ).length;
@@ -118,21 +126,21 @@ export default function UserDashboard() {
           !record.outtime || record.outtime === '--:--'
         ).length;
 
-        // Calculate overtime
+        // Calculate overtime for the period
         const periodOvertime = periodData.reduce((sum, record) => {
-          if (record.overtime && record.overtime !== '--:--') {
-            return sum + convertTimeToMinutes(record.overtime);
-          }
-          return sum;
+          const overtimeMinutes = convertTimeToMinutes(record.overtime);
+          return sum + overtimeMinutes;
         }, 0);
 
-        // Calculate late arrivals
+        // Calculate late arrivals for the period
         const periodLate = periodData.reduce((sum, record) => {
-          if (record.late_in && record.late_in !== '--:--') {
-            return sum + convertTimeToMinutes(record.late_in);
-          }
-          return sum;
+          const lateMinutes = convertTimeToMinutes(record.late_in);
+          return sum + lateMinutes;
         }, 0);
+
+        // Calculate today's metrics
+        const todayOvertime = convertTimeToMinutes(todayData.overtime);
+        const todayLate = convertTimeToMinutes(todayData.late_in);
 
         setStats({
           totalInPunches,
@@ -142,9 +150,9 @@ export default function UserDashboard() {
           todayPunchIn: todayData.intime || '--:--',
           todayPunchOut: todayData.outtime || '--:--',
           periodOvertime,
-          todayOvertime: todayData.overtime ? convertTimeToMinutes(todayData.overtime) : 0,
+          todayOvertime,
           periodLate,
-          todayLate: todayData.late_in ? convertTimeToMinutes(todayData.late_in) : 0
+          todayLate
         });
       } else {
         throw new Error('Invalid data format received from server');
@@ -260,7 +268,7 @@ export default function UserDashboard() {
               </div>
             </div>
             
-            {/* <div className="attendance-card">
+            <div className="attendance-card">
               <div className="card-title">Today's Status</div>
               <div className="card-content">
                 <div className="stat-item">
@@ -272,7 +280,7 @@ export default function UserDashboard() {
                   <span className="stat-value">{stats.todayPunchOut}</span>
                 </div>
               </div>
-            </div> */}
+            </div>
             
             <div className="attendance-card">
               <div className="card-title">Overtime</div>
