@@ -9,6 +9,7 @@ from app.models.user_auth_models import (
 )
 from datetime import datetime
 import pytz
+from typing import Optional, Tuple, Dict, Any
 
 class AuthUserManager:
     def __init__(self):
@@ -302,5 +303,9 @@ class AuthUserManager:
 
     def get_attendance_by_date(self, emp_id: str, date: str):
         return self.service.get_attendance_by_date(emp_id, date)
+
+    def record_attendance(self, attendance_data: dict) -> Tuple[Dict[str, Any], Optional[str]]:
+        """Record attendance (check-in or check-out)"""
+        return self.service.record_attendance(attendance_data)
 
 auth_user_manager = AuthUserManager()

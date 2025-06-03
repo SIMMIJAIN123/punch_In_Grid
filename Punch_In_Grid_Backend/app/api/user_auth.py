@@ -11,10 +11,27 @@ import pytz
 # import io
 import pandas as pd
 from io import BytesIO
+from pydantic import BaseModel
+from typing import Optional, Dict
 
 router = APIRouter(prefix="/service-auth-powerGrid/v1/endpoint", tags=["auth"])
+router_api = APIRouter(prefix="/api", tags=["auth"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/service-auth-powerGrid/v1/endpoint/login")
+
+# Pydantic models for attendance
+class ShiftCreate(BaseModel):
+    shift_name: str
+    shift_intime: str
+    shift_outtime: str
+
+class CheckIn(BaseModel):
+    emp_id: str
+    name: str
+    shift: str
+
+class CheckOut(BaseModel):
+    emp_id: str
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
@@ -233,6 +250,7 @@ async def upload_attendance_excel(file: UploadFile = File(...), token: str = Dep
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process Excel file: {str(e)}")
 
+@router_api.post("/attendance/check-in")
 @router.post("/attendance/check-in")
 async def check_in(token: str = Depends(oauth2_scheme)):
     user = get_current_user(token)
@@ -251,24 +269,23 @@ async def check_in(token: str = Depends(oauth2_scheme)):
         if not user_details:
             raise HTTPException(status_code=404, detail="User not found")
 
-        result = auth_user_manager.record_check_in(
-            emp_id=user.get("emp_id"),
-            name=user_details.get("name", ""),
-            check_in_time=current_time,
-            date=current_date
-        )
+        result, error = auth_user_manager.record_attendance({
+            "emp_id": user.get("emp_id"),
+            "name": user_details.get("name", ""),
+            "intime": current_time,
+            "date": current_date
+        })
 
-        if isinstance(result, str):
-            raise HTTPException(status_code=400, detail=result)
+        if error:
+            raise HTTPException(status_code=400, detail=error)
 
-        return {
-            "message": "Check-in recorded successfully",
-            "data": result
-        }
+        return result
+
     except Exception as e:
         print(f"Error in check_in endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router_api.post("/attendance/check-out")
 @router.post("/attendance/check-out")
 async def check_out(token: str = Depends(oauth2_scheme)):
     user = get_current_user(token)
@@ -276,57 +293,68 @@ async def check_out(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     try:
-        # Get current time in IST
         ist = pytz.timezone('Asia/Kolkata')
         now = datetime.now(ist)
         current_date = now.strftime("%Y-%m-%d")
         current_time = now.strftime("%I:%M %p")
 
-        result = auth_user_manager.record_check_out(
-            emp_id=user.get("emp_id"),
-            check_out_time=current_time,
-            date=current_date
-        )
+        result, error = auth_user_manager.record_attendance({
+            "emp_id": user.get("emp_id"),
+            "outtime": current_time,
+            "date": current_date
+        })
 
-        if isinstance(result, str):
-            raise HTTPException(status_code=400, detail=result)
+        if error:
+            raise HTTPException(status_code=400, detail=error)
 
-        return {
-            "message": "Check-out recorded successfully",
-            "data": result
-        }
+        return result
+
     except Exception as e:
         print(f"Error in check_out endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/attendance/today")
-async def get_today_attendance(token: str = Depends(oauth2_scheme)):
-    user = get_current_user(token)
-    if not user:
+@router_api.get("/attendance/today/{emp_id}")
+@router.get("/attendance/today/{emp_id}")
+async def get_today_attendance(emp_id: str, current_user: dict = Depends(get_current_user)):
+    if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
+        
+    # Only allow admin to view other users' attendance
+    if current_user.get("role") != "admin" and current_user.get("emp_id") != emp_id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this attendance")
 
     try:
-        # Get current date in IST
         ist = pytz.timezone('Asia/Kolkata')
         current_date = datetime.now(ist).strftime("%Y-%m-%d")
         
-        attendance = auth_user_manager.get_attendance_by_date(
-            emp_id=user.get("emp_id"),
-            date=current_date
-        )
-
+        attendance = auth_user_manager.get_attendance_by_date(emp_id=emp_id, date=current_date)
+        
         if not attendance:
+            # Get user's shift timings for default response
+            user = auth_user_manager.get_user_by_id(emp_id)
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+                
+            shift_timings = auth_user_manager.get_shift(user.get("shift", "4"))[0]
+            
             return {
-                "message": "No attendance record found for today",
-                "data": None
+                "empcode": emp_id,
+                "name": user.get("name", ""),
+                "date": current_date,
+                "shift": user.get("shift", "4"),
+                "intime": None,
+                "outtime": None,
+                "status": "Not Started",
+                "late_in": "0",
+                "early_out": "0",
+                "overtime": "0",
+                "shift_intime": shift_timings.get("shift_intime", "09:00 AM"),
+                "shift_outtime": shift_timings.get("shift_outtime", "06:00 PM")
             }
-
-        return {
-            "message": "Today's attendance retrieved successfully",
-            "data": attendance
-        }
+            
+        return attendance
     except Exception as e:
-        print(f"Error in get_today_attendance endpoint: {str(e)}")
+        print(f"Error in get_today_attendance: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Shift Management Endpoints
@@ -400,3 +428,20 @@ async def list_shifts(token: str = Depends(oauth2_scheme)):
         "message": "Shifts retrieved successfully",
         "data": result if result else []
     }
+
+# Attendance endpoints
+@router.post("/attendance/shifts")
+async def create_shift(shift: ShiftCreate, current_user: dict = Depends(get_current_user)):
+    if not current_user or current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    try:
+        result, error = auth_user_manager.create_shift({
+            "shift_name": shift.shift_name,
+            "shift_intime": shift.shift_intime,
+            "shift_outtime": shift.shift_outtime
+        })
+        if error:
+            raise HTTPException(status_code=400, detail=error)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
