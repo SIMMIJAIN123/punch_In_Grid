@@ -11,29 +11,27 @@ const Layout = () => {
   
   // If no token exists, redirect to login
   if (!localStorage.getItem('token')) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
   
   // Define admin-only and user-only paths
   const adminOnlyPaths = [
-    '/admin-dashboard', 
-    '/logged-in-users', 
-    '/register',
-    '/admin/update-email',
+    '/admin-dashboard',
+    '/logged-in-users',
     '/upload-users',
+    '/admin/update-email',
     '/admin/ShiftManagement',
     '/admin/attendance-filter',
-    '/upload-excel',
-    '/attendance-stats'
+    '/upload-excel'
   ];
-  const userOnlyPaths = ['/user-dashboard'];
+  const userOnlyPaths = ['/user-dashboard', '/user/attendance-filter'];
   
   // Check if user has access to current path
-  const isAdminPath = adminOnlyPaths.includes(currentPath);
-  const isUserPath = userOnlyPaths.includes(currentPath);
+  const isAdminPath = adminOnlyPaths.some(path => currentPath.startsWith(path));
+  const isUserPath = userOnlyPaths.some(path => currentPath.startsWith(path));
   
   // Redirect if user doesn't have access to the current path
-  if ((isAdminPath && userRole !== 'admin') || (isUserPath && userRole !== 'user')) {
+  if ((isAdminPath && userRole !== 'admin') || (isUserPath && userRole === 'admin')) {
     return <Navigate to={userRole === 'admin' ? '/admin-dashboard' : '/user-dashboard'} replace />;
   }
 

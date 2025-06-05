@@ -25,7 +25,7 @@ export default function AdminDashboard() {
     shift: ''
   });
   const [allUsers, setAllUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [dateRange, setDateRange] = useState(() => {
     const currentDate = moment();
@@ -34,12 +34,22 @@ export default function AdminDashboard() {
       endDate: currentDate.endOf('month').format('YYYY-MM-DD')
     };
   });
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    totalAttendanceToday: 0,
+    presentToday: 0,
+    absentToday: 0,
+    lateToday: 0
+  });
 
   useEffect(() => {
     if (dateRange.startDate && dateRange.endDate) {
       fetchAdminAttendance();
       fetchUserProfile();
     }
+    fetchAllUsers();
+    fetchTodayStats();
   }, [dateRange]);
 
   const fetchUserProfile = async () => {
@@ -167,272 +177,158 @@ export default function AdminDashboard() {
 
   const fetchAllUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('/service-auth-powerGrid/v1/endpoint/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await axios.get('/service-auth-powerGrid/v1/endpoint/users');
       setAllUsers(response.data || []);
+      setStats(prev => ({
+        ...prev,
+        totalUsers: response.data.length,
+        activeUsers: response.data.filter(user => user.is_active === true).length
+      }));
     } catch (err) {
       console.error('Error fetching users:', err);
+      setError('Failed to fetch users data');
     }
   };
 
-  useEffect(() => {
-    fetchAllUsers();
-  }, []);
+  const fetchTodayStats = async () => {
+    try {
+      const today = moment().format('YYYY-MM-DD');
+      const response = await axios.get('/service-auth-powerGrid/v1/endpoint/attendance_data/daily', {
+        params: { date: today }
+      });
+
+      const attendanceData = response.data || [];
+      setStats(prev => ({
+        ...prev,
+        totalAttendanceToday: attendanceData.length,
+        presentToday: attendanceData.filter(record => record.intime && record.intime !== '--:--').length,
+        absentToday: prev.totalUsers - attendanceData.filter(record => record.intime && record.intime !== '--:--').length,
+        lateToday: attendanceData.filter(record => record.late_in && record.late_in !== '00:00').length
+      }));
+    } catch (err) {
+      console.error('Error fetching today\'s stats:', err);
+      setError('Failed to fetch attendance statistics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Loading dashboard data...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Profile Section */}
-        <div className="mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <div className="flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                {/* <span className="text-xl font-semibold text-gray-800">Admin Dashboard</span> */}
-                {/* <div className="bg-purple-100 px-3 py-1 rounded-full">
-                  <span className="text-sm text-purple-700">Admin</span>
-                </div> */}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <span className="text-sm text-gray-600">Name:</span>
-                  <span className="ml-2 font-medium">{userProfile.name}</span>
-                </div>
-                <div>
-                  <span className="text-sm text-gray-600">Employee ID:</span>
-                  <span className="ml-2 font-medium">{userProfile.empId}</span>
-                </div>
-                <div>
-                  <span className="text-sm text-gray-600">Email:</span>
-                  <span className="ml-2 font-medium">{userProfile.email}</span>
-                </div>
-                <div className="bg-blue-50 p-2 rounded-md">
-                  <span className="text-sm text-blue-800">Current Shift:</span>
-                  <span className="ml-2 font-medium text-blue-900">{userProfile.shift || 'Not assigned'}</span>
-                  <p className="text-xs text-blue-600 mt-1">
-                    {userProfile.shift === '4' ? 'Shift Hours: 5:30 PM - 2:30 AM' : 'Shift Hours: Not Available'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Check In/Out Card */}
-        <div className="mb-6">
-          <AttendanceCard user={userProfile} />
-        </div>
-
-        {/* All Users Section */}
-        {/* <div className="mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <h2 className="text-lg font-semibold mb-4">All Users & Shifts</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift Hours</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {allUsers.map((user, index) => (
-                    <tr key={user.emp_id || index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.emp_id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                          {user.shift || 'Not assigned'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {user.shift === '4' ? '5:30 PM - 2:30 AM' : 'Not Available'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div> */}
-
-        {/* Date Range Filter */}
-        <div className="date-range-filter mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex gap-4 items-end">
-              <div className="filter-group">
-                <label htmlFor="startDate">Start Date:</label>
-                <input
-                  type="date"
-                  id="startDate"
-                  name="startDate"
-                  value={dateRange.startDate}
-                  onChange={handleDateChange}
-                  max={dateRange.endDate}
-                  className="date-input"
-                />
-              </div>
-              <div className="filter-group">
-                <label htmlFor="endDate">End Date:</label>
-                <input
-                  type="date"
-                  id="endDate"
-                  name="endDate"
-                  value={dateRange.endDate}
-                  onChange={handleDateChange}
-                  min={dateRange.startDate}
-                  max={moment().format('YYYY-MM-DD')}
-                  className="date-input"
-                />
-              </div>
-              <button
-                onClick={setCurrentMonth}
-                className="current-month-btn"
-              >
-                Current Month
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {loading && <div className="loading-message">Loading attendance data...</div>}
-        {error && <div className="error-message">{error}</div>}
-
-        {/* Admin's Attendance Cards */}
+        {/* Header */}
         <div className="mb-8">
-          <h4 className="text-lg font-semibold mb-4">My Attendance 
-            {/* ({dateRange.startDate} to {dateRange.endDate}) */}
-            </h4>
-          <div className="attendance-cards">
-            <div className="attendance-card">
-              <div className="card-title">Period Attendance</div>
-              <div className="card-content">
-                <div className="stat-item">
-                  <span className="stat-label">In-Time Punches</span>
-                  <span className="stat-value">{adminStats.totalInPunches}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Missed In-Time</span>
-                  <span className="stat-value">{adminStats.missedInPunches}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Out-Time Punches</span>
-                  <span className="stat-value">{adminStats.totalOutPunches}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Missed Out-Time</span>
-                  <span className="stat-value">{adminStats.missedOutPunches}</span>
-                </div>
+          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Overview of all users and today's attendance
+          </p>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Users</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Total Users</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.totalUsers}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Active Users</p>
+                <p className="text-2xl font-bold text-green-600">{stats.activeUsers}</p>
               </div>
             </div>
-            
-            <div className="attendance-card">
-              <div className="card-title">Today's Status</div>
-              <div className="card-content">
-                <div className="stat-item">
-                  <span className="stat-label">Punch In</span>
-                  <span className="stat-value">{adminStats.todayPunchIn}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Punch Out</span>
-                  <span className="stat-value">{adminStats.todayPunchOut}</span>
-                </div>
-                {/* <div className="stat-item">
-                  <span className="stat-label">Early Out</span>
-                  <span className="stat-value">{adminStats.early_out}</span>
-                </div> */}
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Today's Attendance</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Present</p>
+                <p className="text-2xl font-bold text-green-600">{stats.presentToday}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Absent</p>
+                <p className="text-2xl font-bold text-red-600">{stats.absentToday}</p>
               </div>
             </div>
-            
-            <div className="attendance-card">
-              <div className="card-title">Overtime</div>
-              <div className="card-content">
-                <div className="stat-item">
-                  <span className="stat-label">Period Total</span>
-                  <span className="stat-value">
-                    {Math.floor(adminStats.periodOvertime / 60)}h {adminStats.periodOvertime % 60}m
-                  </span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Today</span>
-                  <span className="stat-value">
-                    {Math.floor(adminStats.todayOvertime / 60)}h {adminStats.todayOvertime % 60}m
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="attendance-card">
-              <div className="card-title">Late Arrivals</div>
-              <div className="card-content">
-                <div className="stat-item">
-                  <span className="stat-label">Period Total</span>
-                  <span className="stat-value">
-                    {Math.floor(adminStats.periodLate / 60)}h {adminStats.periodLate % 60}m
-                  </span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Today</span>
-                  <span className="stat-value">
-                    {Math.floor(adminStats.todayLate / 60)}h {adminStats.todayLate % 60}m
-                  </span>
-                </div>
-              </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Late Arrivals</h3>
+            <div>
+              <p className="text-sm text-gray-600">Today's Late Check-ins</p>
+              <p className="text-2xl font-bold text-yellow-600">{stats.lateToday}</p>
             </div>
           </div>
         </div>
 
-        <style jsx>{`
-          .date-input {
-            padding: 0.5rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            color: #4a5568;
-            background-color: white;
-            min-width: 150px;
-          }
+        {/* Users Table */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">All Users</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Today's Status</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {allUsers.map((user, index) => (
+                  <tr key={user.emp_id || index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">{user.emp_id}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">{user.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {user.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">
+                        {user.shift || 'Not Assigned'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500">
+                        {user.today_status || 'Not Checked In'}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-          .date-input:focus {
-            outline: none;
-            border-color: #4299e1;
-            box-shadow: 0 0 0 1px #4299e1;
-          }
-
-          .current-month-btn {
-            padding: 0.5rem 1rem;
-            background-color: #4299e1;
-            color: white;
-            border: none;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-          }
-
-          .current-month-btn:hover {
-            background-color: #3182ce;
-          }
-
-          .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-          }
-
-          .filter-group label {
-            font-size: 0.875rem;
-            color: #4a5568;
-            font-weight: 500;
-          }
-        `}</style>
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-md">
+            {error}
+          </div>
+        )}
       </div>
     </div>
   );
