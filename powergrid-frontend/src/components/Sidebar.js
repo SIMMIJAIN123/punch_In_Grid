@@ -29,6 +29,8 @@ const Sidebar = ({ userRole }) => {
             <Link to="/logged-in-users">Logged In Users</Link>
             <Link to="/upload-users">Upload Users Data</Link>
             <Link to="/admin/update-email" className="admin-link">Update User Email</Link>
+            <Link to="/admin/ShiftManagement" className="admin-link">shift Management</Link>
+
           </>
         )}
         

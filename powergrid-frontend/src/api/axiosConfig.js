@@ -41,15 +41,12 @@ instance.interceptors.response.use(
       message: error.message
     });
 
-    if (error.response?.status === 403) {
-      // Clear invalid token
+    if (error.response?.status === 403 || error.response?.status === 401) {
+      // Clear invalid token and role
       localStorage.removeItem('token');
-      // Redirect to login
-      window.location.href = '/login';
-    } else if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      localStorage.removeItem('role');
+      // Redirect to root (which is login)
+      window.location.href = '/';
     } else if (error.response?.status === 404) {
       console.error('API endpoint not found:', error.config.url);
     } else if (error.response?.status === 500) {

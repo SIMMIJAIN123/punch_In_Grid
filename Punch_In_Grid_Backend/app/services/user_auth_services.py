@@ -518,6 +518,14 @@ class AuthUserService:
             except Exception:
                 pass  # Shift doesn't exist, continue with creation
 
+            # Ensure times are in AM/PM format
+            from app.models.user_auth_models import convert_to_ampm
+            shift_data = {
+                **shift_data,
+                "shift_intime": convert_to_ampm(shift_data["shift_intime"]),
+                "shift_outtime": convert_to_ampm(shift_data["shift_outtime"])
+            }
+
             # Insert the new shift
             result = self.es.index(
                 index=self.shifts_index,
@@ -556,6 +564,14 @@ class AuthUserService:
                 self.es.get(index=self.shifts_index, id=shift_name)
             except Exception:
                 return None, f"Shift '{shift_name}' not found"
+
+            # Ensure times are in AM/PM format
+            from app.models.user_auth_models import convert_to_ampm
+            shift_data = {
+                **shift_data,
+                "shift_intime": convert_to_ampm(shift_data["shift_intime"]),
+                "shift_outtime": convert_to_ampm(shift_data["shift_outtime"])
+            }
 
             # Update the shift
             try:
@@ -603,9 +619,12 @@ class AuthUserService:
     def get_all_shifts(self):
         """Get all shifts"""
         try:
+            print("Checking if shifts index exists")
             if not self.es.indices.exists(index=self.shifts_index):
+                print("Shifts index does not exist")
                 return [], None
 
+            print("Building search query")
             query = {
                 "query": {
                     "match_all": {}
@@ -614,10 +633,29 @@ class AuthUserService:
                     {"shift_name": {"order": "asc"}}
                 ]
             }
+            print("Executing search query:", query)
             resp = self.es.search(index=self.shifts_index, body=query, size=100)
-            shifts = [hit['_source'] for hit in resp['hits']['hits']]
+            print("Search response:", resp)
+            
+            if not resp.get('hits', {}).get('hits'):
+                print("No shifts found in index")
+                return [], None
+                
+            # Convert times to AM/PM format
+            from app.models.user_auth_models import convert_to_ampm
+            shifts = []
+            for hit in resp['hits']['hits']:
+                shift = hit['_source']
+                shifts.append({
+                    **shift,
+                    "shift_intime": convert_to_ampm(shift["shift_intime"]),
+                    "shift_outtime": convert_to_ampm(shift["shift_outtime"])
+                })
+            
+            print("Extracted and formatted shifts:", shifts)
             return shifts, None
         except Exception as e:
+            print("Error in get_all_shifts:", str(e))
             return None, str(e)
 
     def record_attendance(self, attendance_record: dict):

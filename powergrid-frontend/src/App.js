@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
@@ -14,10 +16,12 @@ import UploadUsers from './pages/UploadUsers';
 import UpdateUserEmail from './pages/UpdateUserEmail';
 import AttendanceFilter from './pages/AttendanceFilter';
 import UserAttendanceFilter from './pages/UserAttendanceFilter';
+import ShiftManagement from './pages/admin/ShiftManagement';
 
 function App() {
   return (
     <BrowserRouter>
+      <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Login />} />
@@ -34,6 +38,7 @@ function App() {
           <Route path="/admin/update-email" element={<UpdateUserEmail />} />
           <Route path="/upload-users" element={<UploadUsers />} />
           <Route path="/admin/attendance-filter" element={<AttendanceFilter />} />
+          <Route path="/admin/ShiftManagement" element={<ShiftManagement />} />
           
           {/* User routes */}
           <Route path="/user-dashboard" element={<UserDashboard />} />

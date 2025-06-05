@@ -5,6 +5,11 @@ from app.manager.user_auth_manager import (
     auth_user_manager, RegisterRequest, LoginRequest, UserResponse, 
     LoginSuccessResponse, TokenData, ShiftRequest
 )
+from app.models.user_auth_models import (
+    ShiftCreate, CheckIn, CheckOut, 
+    AttendanceRecord, CheckInRequest, CheckOutRequest,
+    CheckInResponse, CheckOutResponse
+)
 from app.utils.jwt_helper import create_access_token, decode_access_token
 from datetime import timedelta, datetime
 import pytz
@@ -18,20 +23,6 @@ router = APIRouter(prefix="/service-auth-powerGrid/v1/endpoint", tags=["auth"])
 router_api = APIRouter(prefix="/api", tags=["auth"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/service-auth-powerGrid/v1/endpoint/login")
-
-# Pydantic models for attendance
-class ShiftCreate(BaseModel):
-    shift_name: str
-    shift_intime: str
-    shift_outtime: str
-
-class CheckIn(BaseModel):
-    emp_id: str
-    name: str
-    shift: str
-
-class CheckOut(BaseModel):
-    emp_id: str
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
@@ -416,18 +407,32 @@ async def delete_shift(shift_name: str, token: str = Depends(oauth2_scheme)):
 
 @router.get("/shifts")
 async def list_shifts(token: str = Depends(oauth2_scheme)):
-    user = get_current_user(token)
-    if not user or user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
+    try:
+        print("Received request to list shifts")
+        user = get_current_user(token)
+        if not user or user.get("role") != "admin":
+            print("Authorization failed:", user)
+            raise HTTPException(status_code=403, detail="Not authorized")
 
-    result, error = auth_user_manager.list_shifts()
-    if error:
-        raise HTTPException(status_code=500, detail=str(error))
-    
-    return {
-        "message": "Shifts retrieved successfully",
-        "data": result if result else []
-    }
+        print("Fetching shifts from auth_user_manager")
+        result, error = auth_user_manager.list_shifts()
+        print("Result from list_shifts:", result)
+        print("Error from list_shifts:", error)
+        
+        if error:
+            print("Error occurred while listing shifts:", error)
+            raise HTTPException(status_code=500, detail=str(error))
+        
+        response_data = {
+            "message": "Shifts retrieved successfully",
+            "data": result if result else []
+        }
+        print("Sending response:", response_data)
+        return response_data
+        
+    except Exception as e:
+        print("Unexpected error in list_shifts:", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Attendance endpoints
 @router.post("/attendance/shifts")

@@ -20,7 +20,11 @@ const Layout = () => {
     '/logged-in-users', 
     '/register',
     '/admin/update-email',
-    '/upload-users'
+    '/upload-users',
+    '/admin/ShiftManagement',
+    '/admin/attendance-filter',
+    '/upload-excel',
+    '/attendance-stats'
   ];
   const userOnlyPaths = ['/user-dashboard'];
   
